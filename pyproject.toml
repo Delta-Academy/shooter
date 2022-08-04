@@ -1,0 +1,36 @@
+[tool.black]
+line-length = 100
+target-version = ['py38', 'py39']
+exclude = '''
+/(
+    competitor_code/team_[0-9]*\.py
+    venv.*
+    \.eggs
+  | \.git
+  | \.mypy_cache
+)/
+'''
+[tool.pytest.ini_options]
+pythonpath = [
+  ".", "src",
+]
+
+[tool.poetry]
+name = "python-template"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+
+[tool.poetry.dependencies]
+python = ">=3.8.0,<3.9"
+numpy = ">=1.19.0,<1.20.0"
+replit = "^3.2.4"
+pygame = "^2.1.2"
+
+[tool.poetry.dev-dependencies]
+
+# Commented this out allows local pip install May break replit
+# UPDATE: Tried it out, replit didn't seem too sad
+# [build-system]
+# requires = ["poetry-core>=1.0.0"]
+# build-backend = "poetry.core.masonry.api"
