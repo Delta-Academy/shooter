@@ -1,35 +1,46 @@
 import pygame
 
-from models import Asteroid, Spaceship
+from models import DummyScreen, Spaceship
 from utils import get_random_position, load_sprite, print_text
+
+GAME_SIZE = (800, 600)
 
 
 class SpaceRocks:
-    MIN_ASTEROID_DISTANCE = 250
-
     def __init__(self):
-        self._init_pygame()
-        self.screen = pygame.display.set_mode((800, 600))
-        self.background = load_sprite("space", False)
-        self.clock = pygame.time.Clock()
-        self.font = pygame.font.Font(None, 64)
+
+        self.graphical = False
+        if self.graphical:
+            self.init_graphics()
+        else:
+            self.screen = DummyScreen(GAME_SIZE)
+
         self.message = ""
 
         self.asteroids = []
         self.bullets = []
-        self.player1 = Spaceship((400, 300), self.bullets.append)
-        self.player2 = Spaceship((400, 300), self.bullets.append, player=2)
+        self.player1 = Spaceship((400, 300), self.bullets.append, graphical=self.graphical)
+        self.player2 = Spaceship(
+            (400, 300), self.bullets.append, player=2, graphical=self.graphical
+        )
         self.done = False
 
-    def main_loop(self):
-        while True:
-            self._handle_input()
-            self._process_game_logic()
-            self._draw()
-
-    def _init_pygame(self):
+    def init_graphics(self):
         pygame.init()
         pygame.display.set_caption("Space Rocks")
+        self.screen = pygame.display.set_mode(GAME_SIZE)
+        self.background = load_sprite("space", False)
+        self.clock = pygame.time.Clock()
+        self.font = pygame.font.Font(None, 64)
+
+    def main_loop(self):
+        if self.graphical:
+            while True:
+                self._handle_input()
+                self._process_game_logic()
+                self._draw()
+        else:
+            self._process_game_logic()
 
     def _handle_input(self):
         for event in pygame.event.get():
@@ -53,8 +64,10 @@ class SpaceRocks:
                 self.player1.velocity *= 0
 
     def _process_game_logic(self):
+
         if self.done:
             return
+
         for game_object in self._get_game_objects():
             game_object.move(self.screen)
 
@@ -66,9 +79,10 @@ class SpaceRocks:
                 self.done = True
                 return
 
-        for bullet in self.bullets[:]:
-            if not self.screen.get_rect().collidepoint(bullet.position):
-                self.bullets.remove(bullet)
+        # Don't know what this does
+        # for bullet in self.bullets[:]:
+        #     if not self.screen.get_rect().collidepoint(bullet.position):
+        #         self.bullets.remove(bullet)
 
         if not self.player2 and self.player1:
             self.message = "You won!"
