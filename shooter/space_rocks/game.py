@@ -18,15 +18,8 @@ class SpaceRocks:
         self.asteroids = []
         self.bullets = []
         self.player1 = Spaceship((400, 300), self.bullets.append)
-        self.player2 = Spaceship((400, 300), self.bullets.append)
-
-        for _ in range(1):
-            while True:
-                position = get_random_position(self.screen)
-                if position.distance_to(self.player1.position) > self.MIN_ASTEROID_DISTANCE:
-                    break
-
-            self.asteroids.append(Asteroid(position, self.asteroids.append))
+        self.player2 = Spaceship((400, 300), self.bullets.append, player=2)
+        self.done = False
 
     def main_loop(self):
         while True:
@@ -60,29 +53,24 @@ class SpaceRocks:
                 self.player1.velocity *= 0
 
     def _process_game_logic(self):
+        if self.done:
+            return
         for game_object in self._get_game_objects():
             game_object.move(self.screen)
 
-        if self.player1:
-            for asteroid in self.asteroids:
-                if asteroid.collides_with(self.player1):
-                    self.player1 = None
-                    self.message = "You lost!"
-                    break
-
         for bullet in self.bullets[:]:
-            for asteroid in self.asteroids[:]:
-                if asteroid.collides_with(bullet):
-                    self.asteroids.remove(asteroid)
-                    self.bullets.remove(bullet)
-                    asteroid.split()
-                    break
+            if bullet.collides_with(self.player2):
+                self.player2 = None
+                self.bullets.remove(bullet)
+                self.message = "Winner!!!"
+                self.done = True
+                return
 
         for bullet in self.bullets[:]:
             if not self.screen.get_rect().collidepoint(bullet.position):
                 self.bullets.remove(bullet)
 
-        if not self.asteroids and self.player1:
+        if not self.player2 and self.player1:
             self.message = "You won!"
 
     def _draw(self):
