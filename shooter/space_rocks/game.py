@@ -25,13 +25,11 @@ class SpaceRocks:
     def reset(self):
         self.message = ""
         self.asteroids = []
-        self.bullets = []
         self.player1 = Spaceship(
-            (GAME_SIZE[0] // 4, GAME_SIZE[1] // 2), self.bullets.append, graphical=self.graphical
+            (GAME_SIZE[0] // 4, GAME_SIZE[1] // 2), player=1, graphical=self.graphical
         )
         self.player2 = Spaceship(
             (GAME_SIZE[0] // (4 / 3), GAME_SIZE[1] // 2),
-            self.bullets.append,
             player=2,
             graphical=self.graphical,
         )
@@ -48,8 +46,11 @@ class SpaceRocks:
 
     def main_loop(self):
         if self.graphical:
-            while True:
+            while not self.done:
+                time.sleep(0.1)
                 # self._handle_input()
+                assert self.player1.radius == 20
+                assert self.player2.radius == 20
                 self._process_action(np.random.randint(4), self.player1)
                 self._process_action(np.random.randint(4), self.player2)
                 self._process_game_logic()
@@ -57,6 +58,8 @@ class SpaceRocks:
 
         else:
             while not self.done:
+                assert self.player1.radius == 20
+                assert self.player2.radius == 20
                 self._process_action(np.random.randint(4), self.player1)
                 self._process_action(np.random.randint(4), self.player2)
                 self._process_game_logic()
@@ -102,23 +105,26 @@ class SpaceRocks:
         for game_object in self._get_game_objects():
             game_object.move(self.screen)
 
-        for bullet in self.bullets[:]:
+        for bullet in self.player1.bullets:
+            assert bullet.radius == 5
             if bullet.collides_with(self.player2):
                 self.player2 = None
-                self.bullets.remove(bullet)
+                # self.bullets.remove(bullet)
                 self.message = "Player 1 wins!"
                 self.done = True
                 return
             # Does this give player1 a slight advantage cos the
             # collision is checked first?
-            elif bullet.collides_with(self.player1):
+        for bullet in self.player2.bullets:
+            assert bullet.radius == 5
+            if bullet.collides_with(self.player1):
                 self.player1 = None
-                self.bullets.remove(bullet)
+                # self.bullets.remove(bullet)
                 self.message = "Player 2 wins!"
                 self.done = True
                 return
 
-        # Don't know what this does
+        # I think this removes collided bullets but not sure
         # for bullet in self.bullets[:]:
         #     if not self.screen.get_rect().collidepoint(bullet.position):
         #         self.bullets.remove(bullet)
@@ -139,12 +145,15 @@ class SpaceRocks:
         self.clock.tick(60)
 
     def _get_game_objects(self):
-        game_objects = [*self.asteroids, *self.bullets]
 
+        game_objects = []
         if self.player1:
-            game_objects.append(self.player1)
+            game_objects.extend([self.player1, *self.player1.bullets])
 
         if self.player2:
-            game_objects.append(self.player2)
+            game_objects.extend([self.player2, *self.player2.bullets])
+
+        # if self.player2:
+        #     game_objects.append(self.player2)
 
         return game_objects

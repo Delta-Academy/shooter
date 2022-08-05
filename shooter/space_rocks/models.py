@@ -6,7 +6,6 @@ from pygame.transform import rotozoom
 from utils import get_random_velocity, load_sound, load_sprite, wrap_position
 
 UP = Vector2(0, -1)
-SPRITE_WIDTH = 5
 
 
 class DummyScreen:
@@ -17,9 +16,14 @@ class DummyScreen:
         return self.size[0], self.size[1]
 
 
-class DummySprite:
+class DummyShip:
     def get_width(self):
-        return SPRITE_WIDTH
+        return 40
+
+
+class DummyBullet:
+    def get_width(self):
+        return 10
 
 
 class DummySound:
@@ -28,11 +32,14 @@ class DummySound:
 
 
 class GameObject:
-    def __init__(self, position, sprite, velocity):
-        self.position = Vector2(position)
+    def __init__(self, starting_position, sprite, velocity):
+        self.set_position(starting_position)
         self.sprite = sprite
         self.radius = sprite.get_width() / 2
         self.velocity = Vector2(velocity)
+
+    def set_position(self, position):
+        self.position = Vector2(position)
 
     def draw(self, surface):
         blit_position = self.position - Vector2(self.radius)
@@ -49,21 +56,26 @@ class GameObject:
 class Spaceship(GameObject):
     ANGLE_TURN = 45
     ACCELERATION = 0.1
-    BULLET_SPEED = 50
+    BULLET_SPEED = 60
 
-    def __init__(self, position, create_bullet_callback, player=1, graphical=True):
-        self.create_bullet_callback = create_bullet_callback
-        self.position = position
+    def __init__(self, starting_position, player=1, graphical=True):
         # Make a copy of the original UP vector
-        self.direction = Vector2(UP)
+        self.starting_position = starting_position
         self.graphical = graphical
 
         if self.graphical:
-            super().__init__(self.position, load_sprite("spaceship"), Vector2(0))
+            super().__init__(starting_position, load_sprite("spaceship"), Vector2(0))
             self.laser_sound = load_sound("laser")
         else:
-            super().__init__(self.position, DummySprite(), Vector2(0))
+            super().__init__(starting_position, DummyShip(), Vector2(0))
             self.laser_sound = DummySound()
+
+        self.reset()
+
+    def reset(self):
+        self.set_position(self.starting_position)
+        self.direction = Vector2(UP)
+        self.bullets = []
 
     def rotate(self, clockwise=True):
         sign = 1 if clockwise else -1
@@ -74,7 +86,7 @@ class Spaceship(GameObject):
         self.velocity += self.direction * self.ACCELERATION
 
     def move_forward(self):
-        distance = SPRITE_WIDTH
+        distance = self.radius
         self.position += self.direction * distance
 
     def draw(self, surface):
@@ -87,7 +99,7 @@ class Spaceship(GameObject):
     def shoot(self):
         bullet_velocity = self.direction * self.BULLET_SPEED + self.velocity
         bullet = Bullet(self.position, bullet_velocity, self.graphical)
-        self.create_bullet_callback(bullet)
+        self.bullets.append(bullet)
         self.laser_sound.play()
 
 
@@ -114,7 +126,7 @@ class Bullet(GameObject):
         if graphical:
             super().__init__(position, load_sprite("bullet"), velocity)
         else:
-            super().__init__(position, DummySprite(), velocity)
+            super().__init__(position, DummyBullet(), velocity)
 
     def move(self, surface):
         self.position = self.position + self.velocity
