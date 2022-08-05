@@ -22,6 +22,11 @@ class DummySprite:
         return SPRITE_WIDTH
 
 
+class DummySound:
+    def play(self):
+        pass
+
+
 class GameObject:
     def __init__(self, position, sprite, velocity):
         self.position = Vector2(position)
@@ -42,9 +47,9 @@ class GameObject:
 
 
 class Spaceship(GameObject):
-    MANEUVERABILITY = 3
+    ANGLE_TURN = 45
     ACCELERATION = 0.1
-    BULLET_SPEED = 3
+    BULLET_SPEED = 20
 
     def __init__(self, position, create_bullet_callback, player=1, graphical=True):
         self.create_bullet_callback = create_bullet_callback
@@ -58,14 +63,19 @@ class Spaceship(GameObject):
             self.laser_sound = load_sound("laser")
         else:
             super().__init__(self.position, DummySprite(), Vector2(0))
+            self.laser_sound = DummySound()
 
     def rotate(self, clockwise=True):
         sign = 1 if clockwise else -1
-        angle = self.MANEUVERABILITY * sign
+        angle = self.ANGLE_TURN * sign
         self.direction.rotate_ip(angle)
 
     def accelerate(self):
         self.velocity += self.direction * self.ACCELERATION
+
+    def move_forward(self):
+        distance = SPRITE_WIDTH
+        self.position += self.direction * distance
 
     def draw(self, surface):
         angle = self.direction.angle_to(UP)
@@ -76,7 +86,7 @@ class Spaceship(GameObject):
 
     def shoot(self):
         bullet_velocity = self.direction * self.BULLET_SPEED + self.velocity
-        bullet = Bullet(self.position, bullet_velocity)
+        bullet = Bullet(self.position, bullet_velocity, self.graphical)
         self.create_bullet_callback(bullet)
         self.laser_sound.play()
 
@@ -100,8 +110,11 @@ class Spaceship(GameObject):
 
 
 class Bullet(GameObject):
-    def __init__(self, position, velocity):
-        super().__init__(position, load_sprite("bullet"), velocity)
+    def __init__(self, position, velocity, graphical):
+        if graphical:
+            super().__init__(position, load_sprite("bullet"), velocity)
+        else:
+            super().__init__(position, DummySprite(), velocity)
 
     def move(self, surface):
         self.position = self.position + self.velocity

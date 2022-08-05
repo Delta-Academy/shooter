@@ -1,3 +1,6 @@
+# cprofile files
+*.prof
+
 # IDE helpers
 .idea
 .vscode

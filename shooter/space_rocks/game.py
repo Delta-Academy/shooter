@@ -1,29 +1,40 @@
+import numpy as np
 import pygame
 
 from models import DummyScreen, Spaceship
 from utils import get_random_position, load_sprite, print_text
 
-GAME_SIZE = (800, 600)
+# GAME_SIZE = (800, 600)
+# GAME_SIZE = (400, 300)
+GAME_SIZE = (200, 150)
 
 
 class SpaceRocks:
-    def __init__(self):
+    def __init__(self, graphical: bool):
 
-        self.graphical = False
+        self.graphical = graphical
         if self.graphical:
             self.init_graphics()
         else:
             self.screen = DummyScreen(GAME_SIZE)
 
-        self.message = ""
+        self.reset()
 
+    def reset(self):
+        self.message = ""
         self.asteroids = []
         self.bullets = []
-        self.player1 = Spaceship((400, 300), self.bullets.append, graphical=self.graphical)
+        self.player1 = Spaceship(
+            (GAME_SIZE[0] // 4, GAME_SIZE[1] // 2), self.bullets.append, graphical=self.graphical
+        )
         self.player2 = Spaceship(
-            (400, 300), self.bullets.append, player=2, graphical=self.graphical
+            (GAME_SIZE[0] // (4 / 3), GAME_SIZE[1] // 2),
+            self.bullets.append,
+            player=2,
+            graphical=self.graphical,
         )
         self.done = False
+        self.n_actions = 0
 
     def init_graphics(self):
         pygame.init()
@@ -35,12 +46,17 @@ class SpaceRocks:
 
     def main_loop(self):
         if self.graphical:
-            while True:
-                self._handle_input()
+            while not self.done:
+                # self._handle_input()
+                self._process_action(np.random.randint(4), self.player1)
+                self._process_action(np.random.randint(4), self.player2)
                 self._process_game_logic()
                 self._draw()
         else:
-            self._process_game_logic()
+            while not self.done:
+                self._process_action(np.random.randint(4), self.player1)
+                self._process_action(np.random.randint(4), self.player2)
+                self._process_game_logic()
 
     def _handle_input(self):
         for event in pygame.event.get():
@@ -60,8 +76,18 @@ class SpaceRocks:
                 self.player1.rotate(clockwise=False)
             if is_key_pressed[pygame.K_UP]:
                 self.player1.accelerate()
-            else:
-                self.player1.velocity *= 0
+
+    def _process_action(self, action: int, player: Spaceship):
+        self.n_actions += 1
+        player.velocity *= 0
+        if action == 0:
+            player.rotate(clockwise=True)
+        elif action == 1:
+            player.rotate(clockwise=False)
+        elif action == 2:
+            player.move_forward()
+        elif action == 3:
+            player.shoot()
 
     def _process_game_logic(self):
 
