@@ -6,11 +6,11 @@ from pygame.image import load
 from pygame.math import Vector2
 from pygame.mixer import Sound
 
-UMBRELLA = Path(__file__).parent.parent.resolve()
+HERE = Path(__file__).parent.resolve()
 
 
 def load_sprite(name, with_alpha=True):
-    path = UMBRELLA / f"assets/sprites/{name}.png"
+    path = HERE / f"assets/sprites/{name}.png"
     loaded_sprite = load(path)
 
     if with_alpha:
@@ -20,7 +20,7 @@ def load_sprite(name, with_alpha=True):
 
 
 def load_sound(name):
-    path = UMBRELLA / f"assets/sounds/{name}.wav"
+    path = HERE / f"assets/sounds/{name}.wav"
     return Sound(str(path))
 
 

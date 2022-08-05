@@ -3,7 +3,7 @@ import time
 
 from tqdm import tqdm
 
-from game import SpaceRocks
+from game_mechanics import SpaceRocks
 
 
 def n_games():
@@ -31,6 +31,6 @@ def graphical():
 
 if __name__ == "__main__":
 
-    # graphical()
+    graphical()
 
-    cProfile.run("n_games()", "profile.prof")
+    # cProfile.run("n_games()", "profile.prof")

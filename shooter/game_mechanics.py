@@ -1,71 +1,159 @@
-from typing import Any, Callable, Dict, Tuple
+import time
+
+import numpy as np
+import pygame
+
+from models import DummyScreen, Spaceship
+from utils import get_random_position, load_sprite, print_text
+
+GAME_SIZE = (800, 600)
+# GAME_SIZE = (400, 300)
+# GAME_SIZE = (200, 150)
 
 
-def save_pkl(file: Any, team_name: str):
-    """Save a user PKL."""
-    pass
+class SpaceRocks:
+    def __init__(self, graphical: bool):
 
+        self.graphical = graphical
+        if self.graphical:
+            self.init_graphics()
+        else:
+            self.screen = DummyScreen(GAME_SIZE)
 
-def load_pkl(team_name: str):
-    """Load a user PKL."""
-    pass
-
-
-def choose_move_randomly(state):
-    pass
-
-
-def play_game(
-    your_choose_move: Callable,
-    opponent_choose_move: Callable,
-    game_speed_multiplier=1,
-    render=True,
-    verbose=False,
-):
-    pass
-
-
-class Env:
-    def __init__(self):
-        """Initialises the object.
-
-        Is called when you call `environment = Env()`.
-
-        It sets everything up in the starting state for the episode to run.
-        """
         self.reset()
 
-    def step(self, action: Any) -> Tuple[Any, float, bool, Dict]:
-        """
-        Given an action to take:
-            1. sample the next state and update the state
-            2. get the reward from this timestep
-            3. determine whether the episode has terminated
+    def reset(self):
+        self.message = ""
+        self.asteroids = []
+        self.player1 = Spaceship(
+            (GAME_SIZE[0] // 4, GAME_SIZE[1] // 2), player=1, graphical=self.graphical
+        )
+        self.player2 = Spaceship(
+            (GAME_SIZE[0] // (4 / 3), GAME_SIZE[1] // 2),
+            player=2,
+            graphical=self.graphical,
+        )
+        self.done = False
+        self.n_actions = 0
 
-        Args:
-            action: The action to take. Determined by user code
-                that runs the policy
+    def init_graphics(self):
+        pygame.init()
+        pygame.display.set_caption("Space Rocks")
+        self.screen = pygame.display.set_mode(GAME_SIZE)
+        self.background = load_sprite("space", False)
+        self.clock = pygame.time.Clock()
+        self.font = pygame.font.Font(None, 64)
 
-        Returns:
-            Tuple of:
-                1. state (Any): The updated state after taking the action
-                2. reward (float): Reward at this timestep
-                3. done (boolean): Whether the episode is over
-                4. info (dict): Dictionary of extra information
-        """
-        raise NotImplementedError()
+    def main_loop(self):
+        if self.graphical:
+            while not self.done:
+                time.sleep(0.1)
+                # self._handle_input()
+                assert self.player1.radius == 20
+                assert self.player2.radius == 20
+                self._process_action(np.random.randint(4), self.player1)
+                self._process_action(np.random.randint(4), self.player2)
+                self._process_game_logic()
+                self._draw()
 
-    def reset(self) -> Tuple[Any, float, bool, Dict]:
-        """Resets the environment (resetting state, total return & whether the episode has
-        terminated) so it can be re-used for another episode.
+        else:
+            while not self.done:
+                assert self.player1.radius == 20
+                assert self.player2.radius == 20
+                self._process_action(np.random.randint(4), self.player1)
+                self._process_action(np.random.randint(4), self.player2)
+                self._process_game_logic()
 
-        Returns:
-            Same type output as .step(). Tuple of:
-                1. state (Any): The state after resetting the environment
-                2. reward (None): None at this point, since no reward is
-                   given initially
-                3. done (boolean): Always `True`, since the episode has just
-                   been reset
-                4. info (dict): Dictionary of any extra information
-        """
-        raise NotImplementedError()
+    def _handle_input(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT or (
+                event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE
+            ):
+                quit()
+            elif self.player1 and event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                self.player1.shoot()
+
+        is_key_pressed = pygame.key.get_pressed()
+
+        if self.player1:
+            if is_key_pressed[pygame.K_RIGHT]:
+                self.player1.rotate(clockwise=True)
+            elif is_key_pressed[pygame.K_LEFT]:
+                self.player1.rotate(clockwise=False)
+            if is_key_pressed[pygame.K_UP]:
+                self.player1.accelerate()
+
+    def _process_action(self, action: int, player: Spaceship):
+        if self.done:
+            return
+        self.n_actions += 1
+        player.velocity *= 0
+        if action == 0:
+            player.rotate(clockwise=True)
+        elif action == 1:
+            player.rotate(clockwise=False)
+        elif action == 2:
+            player.move_forward()
+        elif action == 3:
+            player.shoot()
+
+    def _process_game_logic(self):
+
+        if self.done:
+            return
+
+        for game_object in self._get_game_objects():
+            game_object.move(self.screen)
+
+        for bullet in self.player1.bullets:
+            assert bullet.radius == 5
+            if bullet.collides_with(self.player2):
+                self.player2 = None
+                # self.bullets.remove(bullet)
+                self.message = "Player 1 wins!"
+                self.done = True
+                return
+            # Does this give player1 a slight advantage cos the
+            # collision is checked first?
+        for bullet in self.player2.bullets:
+            assert bullet.radius == 5
+            if bullet.collides_with(self.player1):
+                self.player1 = None
+                # self.bullets.remove(bullet)
+                self.message = "Player 2 wins!"
+                self.done = True
+                return
+
+        # I think this removes collided bullets but not sure
+        # for bullet in self.bullets[:]:
+        #     if not self.screen.get_rect().collidepoint(bullet.position):
+        #         self.bullets.remove(bullet)
+
+        if not self.player2 and self.player1:
+            self.message = "You won!"
+
+    def _draw(self):
+        self.screen.blit(self.background, (0, 0))
+
+        for game_object in self._get_game_objects():
+            game_object.draw(self.screen)
+
+        if self.message:
+            print_text(self.screen, self.message, self.font)
+
+        pygame.display.flip()
+        self.clock.tick(60)
+
+    def _get_game_objects(self):
+
+        game_objects = []
+        if self.player1:
+            game_objects.extend([self.player1, *self.player1.bullets])
+
+        if self.player2:
+            game_objects.extend([self.player2, *self.player2.bullets])
+
+        # if self.player2:
+        #     game_objects.append(self.player2)
+
+        return game_objects
