@@ -1,22 +1,32 @@
+import nntplib
 from typing import Any, Dict
 
-from check_submission import check_submission
-from game_mechanics import Env, choose_move_randomly, load_pkl, play_game, save_pkl
+import numpy as np
+from torch import nn
 
-TEAM_NAME = "Team Name"  # <---- Enter your team name here!
+from check_submission import check_submission
+from game_mechanics import (
+    ShooterEnv,
+    choose_move_randomly,
+    load_network,
+    play_shooter,
+    save_network,
+)
+
+TEAM_NAME = "Team Jimmy"  # <---- Enter your team name here!
 assert TEAM_NAME != "Team Name", "Please change your TEAM_NAME!"
 
 
-def train() -> Dict:
+def train() -> nn.Module:
     """
     TODO: Write this function to train your algorithm.
 
     Returns:
     """
-    raise NotImplementedError("You need to implement this function!")
+    return nn.Linear(1, 1)
 
 
-def choose_move(state: Any, user_file: Any, verbose: bool = False) -> int:
+def choose_move(state: Any, neural_network: nn.Module) -> int:
     """Called during competitive play. It acts greedily given current state of the board and value
     function dictionary. It returns a single move to play.
 
@@ -25,20 +35,20 @@ def choose_move(state: Any, user_file: Any, verbose: bool = False) -> int:
 
     Returns:
     """
-    raise NotImplementedError("You need to implement this function!")
+    return choose_move_randomly(state)
 
 
 if __name__ == "__main__":
 
     ## Example workflow, feel free to edit this! ###
     file = train()
-    save_pkl(file, TEAM_NAME)
+    save_network(file, TEAM_NAME)
 
-    check_submission(
-        TEAM_NAME
-    )  # <---- Make sure I pass! Or your solution will not work in the tournament!!
+    # check_submission(
+    #     TEAM_NAME
+    # )  # <---- Make sure I pass! Or your solution will not work in the tournament!!
 
-    my_value_fn = load_pkl(TEAM_NAME)
+    my_value_fn = load_network(TEAM_NAME)
 
     # Code below plays a single game against a random
     #  opponent, think about how you might want to adapt this to
@@ -50,10 +60,9 @@ if __name__ == "__main__":
         """
         return choose_move(state, my_value_fn)
 
-    play_game(
+    play_shooter(
         your_choose_move=choose_move_no_value_fn,
         opponent_choose_move=choose_move_randomly,
         game_speed_multiplier=1,
         render=True,
-        verbose=False,
     )

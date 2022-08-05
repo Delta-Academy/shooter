@@ -5,11 +5,12 @@ from pygame import Color
 from pygame.image import load
 from pygame.math import Vector2
 from pygame.mixer import Sound
+from pygame.surface import Surface
 
 HERE = Path(__file__).parent.resolve()
 
 
-def load_sprite(name, with_alpha=True):
+def load_sprite(name: str, with_alpha: bool = True) -> Surface:
     path = HERE / f"assets/sprites/{name}.png"
     loaded_sprite = load(path)
 
@@ -19,7 +20,7 @@ def load_sprite(name, with_alpha=True):
         return loaded_sprite.convert()
 
 
-def load_sound(name):
+def load_sound(name: str) -> Sound:
     path = HERE / f"assets/sounds/{name}.wav"
     return Sound(str(path))
 

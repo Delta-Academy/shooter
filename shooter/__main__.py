@@ -3,12 +3,12 @@ import time
 
 from tqdm import tqdm
 
-from game_mechanics import SpaceRocks
+from game_mechanics import ShooterEnv
 
 
 def n_games():
     n = 100
-    space_rocks = SpaceRocks(graphical=False)
+    space_rocks = ShooterEnv(render=False)
     t1 = time.time()
 
     n_actions = []
@@ -24,7 +24,7 @@ def n_games():
 
 def graphical():
 
-    space_rocks = SpaceRocks(graphical=True)
+    space_rocks = ShooterEnv(render=True)
     space_rocks.main_loop()
     print(f"Number of actions = {space_rocks.n_actions}")
 

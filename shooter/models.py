@@ -1,6 +1,10 @@
-from typing import Tuple
+from abc import ABC, abstractmethod
+from collections import abc
+from typing import Any, List, Tuple, Union
 
+import pygame
 from pygame.math import Vector2
+from pygame.surface import Surface
 from pygame.transform import rotozoom
 
 from utils import get_random_velocity, load_sound, load_sprite, wrap_position
@@ -16,39 +20,55 @@ class DummyScreen:
         return self.size[0], self.size[1]
 
 
-class DummyShip:
-    def get_width(self):
+class DummySprite(ABC):
+    @abstractmethod
+    def get_width(self) -> int:
+        pass
+
+
+class DummyShip(DummySprite):
+    def get_width(self) -> int:
         return 40
 
 
-class DummyBullet:
-    def get_width(self):
+class DummyBullet(DummySprite):
+    def get_width(self) -> int:
         return 10
 
 
 class DummySound:
-    def play(self):
+    def play(self) -> None:
         pass
 
 
 class GameObject:
-    def __init__(self, starting_position, sprite, velocity):
+    def __init__(
+        self, starting_position: Tuple[int, int], sprite: Union[Surface, DummySprite], velocity: int
+    ) -> None:
         self.set_position(starting_position)
         self.sprite = sprite
         self.radius = sprite.get_width() / 2
         self.velocity = Vector2(velocity)
+        self.face_up()
 
-    def set_position(self, position):
+    def set_position(self, position: Tuple[int, int]) -> None:
         self.position = Vector2(position)
 
-    def draw(self, surface):
+    def face_up(self) -> None:
+        self.direction = Vector2(UP)
+
+    @property
+    def angle(self) -> int:
+        return int(self.direction.angle_to(UP))
+
+    def draw(self, surface: pygame.Surface) -> None:
         blit_position = self.position - Vector2(self.radius)
         surface.blit(self.sprite, blit_position)
 
-    def move(self, surface):
+    def move(self, surface: pygame.Surface) -> None:
         self.position = wrap_position(self.position + self.velocity, surface)
 
-    def collides_with(self, other_obj):
+    def collides_with(self, other_obj: "GameObject") -> bool:
         distance = self.position.distance_to(other_obj.position)
         return distance < self.radius + other_obj.radius
 
@@ -57,11 +77,14 @@ class Spaceship(GameObject):
     ANGLE_TURN = 45
     ACCELERATION = 0.1
     BULLET_SPEED = 60
+    NUM_BULLETS = 2  # Limit the number on the screen at one time
 
-    def __init__(self, starting_position, player=1, graphical=True):
+    def __init__(self, starting_position, player: int, graphical=True) -> None:
+
         # Make a copy of the original UP vector
         self.starting_position = starting_position
         self.graphical = graphical
+        self.player = player
 
         if self.graphical:
             super().__init__(starting_position, load_sprite("spaceship"), Vector2(0))
@@ -72,10 +95,16 @@ class Spaceship(GameObject):
 
         self.reset()
 
-    def reset(self):
+    def reset(self) -> None:
         self.set_position(self.starting_position)
-        self.direction = Vector2(UP)
-        self.bullets = []
+        self.face_up()
+
+        self.bullets: List[Bullet] = []
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Spaceship):
+            raise NotImplemented
+        return self.player == other.player
 
     def rotate(self, clockwise=True):
         sign = 1 if clockwise else -1
@@ -97,6 +126,9 @@ class Spaceship(GameObject):
         surface.blit(rotated_surface, blit_position)
 
     def shoot(self):
+        # Limit number of bullets
+        if len(self.bullets) == self.NUM_BULLETS:
+            return
         bullet_velocity = self.direction * self.BULLET_SPEED + self.velocity
         bullet = Bullet(self.position, bullet_velocity, self.graphical)
         self.bullets.append(bullet)
