@@ -49,7 +49,7 @@ class GameObject:
 class Spaceship(GameObject):
     ANGLE_TURN = 45
     ACCELERATION = 0.1
-    BULLET_SPEED = 20
+    BULLET_SPEED = 50
 
     def __init__(self, position, create_bullet_callback, player=1, graphical=True):
         self.create_bullet_callback = create_bullet_callback

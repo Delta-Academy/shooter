@@ -26,5 +26,5 @@ def graphical():
 
 if __name__ == "__main__":
 
-    # graphical()
-    cProfile.run("n_games()", "profile.prof")
+    graphical()
+    # cProfile.run("n_games()", "profile.prof")

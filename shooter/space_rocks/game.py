@@ -1,12 +1,14 @@
+import time
+
 import numpy as np
 import pygame
 
 from models import DummyScreen, Spaceship
 from utils import get_random_position, load_sprite, print_text
 
-# GAME_SIZE = (800, 600)
+GAME_SIZE = (800, 600)
 # GAME_SIZE = (400, 300)
-GAME_SIZE = (200, 150)
+# GAME_SIZE = (200, 150)
 
 
 class SpaceRocks:
@@ -46,12 +48,13 @@ class SpaceRocks:
 
     def main_loop(self):
         if self.graphical:
-            while not self.done:
+            while True:
                 # self._handle_input()
                 self._process_action(np.random.randint(4), self.player1)
                 self._process_action(np.random.randint(4), self.player2)
                 self._process_game_logic()
                 self._draw()
+
         else:
             while not self.done:
                 self._process_action(np.random.randint(4), self.player1)
@@ -78,6 +81,8 @@ class SpaceRocks:
                 self.player1.accelerate()
 
     def _process_action(self, action: int, player: Spaceship):
+        if self.done:
+            return
         self.n_actions += 1
         player.velocity *= 0
         if action == 0:
@@ -101,7 +106,15 @@ class SpaceRocks:
             if bullet.collides_with(self.player2):
                 self.player2 = None
                 self.bullets.remove(bullet)
-                self.message = "Winner!!!"
+                self.message = "Player 1 wins!"
+                self.done = True
+                return
+            # Does this give player1 a slight advantage cos the
+            # collision is checked first?
+            elif bullet.collides_with(self.player1):
+                self.player1 = None
+                self.bullets.remove(bullet)
+                self.message = "Player 2 wins!"
                 self.done = True
                 return
 
