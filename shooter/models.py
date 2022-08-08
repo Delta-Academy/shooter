@@ -16,8 +16,12 @@ class DummyScreen:
     def __init__(self, size: Tuple):
         self.size = size
 
-    def get_size(self):
+    def get_size(self) -> Tuple[int, int]:
         return self.size[0], self.size[1]
+
+    def get_rect(self):
+        # TODO
+        pass
 
 
 class DummySprite(ABC):
@@ -76,10 +80,12 @@ class GameObject:
 class Spaceship(GameObject):
     ANGLE_TURN = 45
     ACCELERATION = 0.1
-    BULLET_SPEED = 60
+    BULLET_SPEED = 5
     NUM_BULLETS = 2  # Limit the number on the screen at one time
 
-    def __init__(self, starting_position, player: int, graphical=True) -> None:
+    def __init__(
+        self, starting_position: Tuple[int, int], player: int, graphical: bool = True
+    ) -> None:
 
         # Make a copy of the original UP vector
         self.starting_position = starting_position

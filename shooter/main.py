@@ -38,6 +38,10 @@ def choose_move(state: Any, neural_network: nn.Module) -> int:
     return choose_move_randomly(state)
 
 
+def n_games():
+    pass
+
+
 if __name__ == "__main__":
 
     ## Example workflow, feel free to edit this! ###

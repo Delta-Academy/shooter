@@ -40,14 +40,12 @@ def play_shooter(
     total_return = 0.0
     game = ShooterEnv(opponent_choose_move, render=render)
     state, reward, done, info = game.reset()
-    # if verbose:
-    #     time.sleep(1 / game_speed_multiplier)
-
     while not done:
         action = your_choose_move(state)
         state, reward, done, info = game.step(action)
-        print(done)
         total_return += reward
+        if render:
+            time.sleep(0.5)
 
     return total_return
 
@@ -102,7 +100,7 @@ class ShooterEnv:
             (GAME_SIZE[0] // 4, GAME_SIZE[1] // 2), player=1, graphical=self.render
         )
         self.player2 = Spaceship(
-            (GAME_SIZE[0] // (4 / 3), GAME_SIZE[1] // 2),
+            (int(GAME_SIZE[0] // (4 / 3)), GAME_SIZE[1] // 2),
             player=2,
             graphical=self.render,
         )
@@ -110,7 +108,7 @@ class ShooterEnv:
         self.n_actions = 0
         return self.observation, 0, False, {}
 
-    def init_graphics(self):
+    def init_graphics(self) -> None:
         pygame.init()
         pygame.display.set_caption("Space Rocks")
         self.screen = pygame.display.set_mode(GAME_SIZE)
@@ -121,7 +119,7 @@ class ShooterEnv:
     def _step(self, action: int, player: Spaceship) -> int:
         """Takes a single step and returns the reward."""
 
-        assert isinstance(action, int) and 0 <= action <= 4, "Action should be an integer 0-4"
+        assert isinstance(action, int) and 0 <= action <= 3, "Action should be an integer 0-3"
         self._take_action(action, player)
         winner = self._process_game_logic()
         if winner is not None:
@@ -137,16 +135,24 @@ class ShooterEnv:
             * -1  # TODO: Flip the observation
         )
 
+        if self.render:
+            self._draw()
+
         return self.observation, reward, self.done, {}
 
     @property
+    def total_game_bullets(self) -> int:
+        return self.player1.NUM_BULLETS * 2
+
+    @property
     def observation(self) -> np.ndarray:
-        observation = np.zeros(6 * 3)
+
+        observation = np.zeros((2 + self.total_game_bullets) * 3)
         for idx, object in enumerate(
             [self.player1, self.player2, *self.player1.bullets, *self.player1.bullets]
         ):
             fill = np.array([object.position[0], object.position[1], object.angle])
-            observation[idx * 3 : idx * 3 + 3] = fill
+            observation[idx * 3 : (idx + 1) * 3] = fill
         return observation
 
     def main_loop(self) -> None:
@@ -221,12 +227,16 @@ class ShooterEnv:
                 winner = self.player2
                 return winner
 
-        return None
+        for bullet in self.player1.bullets:
+            # TODO: wont work with dummy screen
+            if not self.screen.get_rect().collidepoint(bullet.position):
+                self.player1.bullets.remove(bullet)
 
-        # I think this removes collided bullets but not sure
-        # for bullet in self.bullets[:]:
-        #     if not self.screen.get_rect().collidepoint(bullet.position):
-        #         self.bullets.remove(bullet)
+        for bullet in self.player2.bullets:
+            if not self.screen.get_rect().collidepoint(bullet.position):
+                self.player2.bullets.remove(bullet)
+
+        return None
 
     def _draw(self):
         self.screen.blit(self.background, (0, 0))
@@ -253,78 +263,3 @@ class ShooterEnv:
         #     game_objects.append(self.player2)
 
         return game_objects
-
-    # def _step(self, move: Optional[Tuple[int, int]], verbose: bool = False) -> int:
-    #     """Takes 1 turn, internal to this class.
-
-    #     Do not call
-    #     """
-    #     assert not self.done, "Game is over, call .reset() to start a new game"
-
-    #     if move is None:
-    #         assert not has_legal_move(
-    #             self._board, self._player
-    #         ), f"Your move is None, but you must make a move when a legal move is available!"
-    #         if verbose:
-    #             print(f"Player {self._player} has no legal move, switching player")
-    #         self.switch_player()
-    #         return 0
-
-    #     assert is_legal_move(self._board, move, self._player), f"Move {move} is not valid!"
-
-    #     self.running_tile_count += 1
-    #     self._board = _make_move(self._board, move, self._player)
-
-    #     # Check for game completion
-    #     tile_difference = self.tile_count[self._player] - self.tile_count[self._player * -1]
-    #     self.done = self.game_over
-    #     self.winner = (
-    #         None
-    #         if self.tile_count[1] == self.tile_count[-1] or not self.done
-    #         # mypy sad, probably bug: github.com/python/mypy/issues/9765
-    #         else max(self.tile_count, key=self.tile_count.get)  # type: ignore
-    #     )
-    #     won = self.done and tile_difference > 0
-
-    #     # Currently just if won, many alternatives
-    #     reward = 1 if won else 0
-
-    #     if verbose:
-    #         print(f"Player {self._player} places counter at row {move[0]}, column {move[1]}")
-    #         print(self)
-    #         if self.done:
-    #             if won:
-    #                 print(f"Player {self._player} has won!\n")
-    #             elif self.running_tile_count == self.board_dim**2 and tile_difference == 0:
-    #                 print("Board full. It's a tie!")
-    #             else:
-    #                 print(f"Player {self._player * -1} has won!\n")
-
-    #     self.switch_player()
-    #     return reward
-
-    # def step(
-    #     self, move: Optional[Tuple[int, int]], verbose: bool = False
-    # ) -> Tuple[np.ndarray, int, bool, Dict[str, int]]:
-    #     """Called by user - takes 2 turns, yours and your opponent's"""
-
-    #     reward = self._step(move, verbose)
-
-    #     if not self.done:
-    #         # Negative sign is because both players should see themselves as player 1
-    #         opponent_action = self._opponent_choose_move(-self._board)
-    #         opponent_reward = self._step(opponent_action, verbose)  # Can be None, fix
-    #         # Negative sign is because the opponent's victory is your loss
-    #         reward -= opponent_reward
-
-    #     if self.done:
-    #         if np.sum(self._board == 1) > np.sum(self._board == -1):
-    #             reward = 1
-    #         elif np.sum(self._board == 1) < np.sum(self._board == -1):
-    #             reward = -1
-    #         else:
-    #             reward = 0
-    #     else:
-    #         reward = 0
-
-    #     return self._board, reward, self.done, self.info
