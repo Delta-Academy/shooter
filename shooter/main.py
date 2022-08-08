@@ -3,6 +3,7 @@ from typing import Any, Dict
 
 import numpy as np
 from torch import nn
+from tqdm import tqdm
 
 from check_submission import check_submission
 from game_mechanics import (
@@ -38,8 +39,19 @@ def choose_move(state: Any, neural_network: nn.Module) -> int:
     return choose_move_randomly(state)
 
 
-def n_games():
-    pass
+def n_games() -> None:
+    n = 100
+    n_actions = []
+    for _ in range(n):
+        game = ShooterEnv(choose_move_randomly, render=False)
+        state, reward, done, info = game.reset()
+        while not done:
+            action = choose_move_randomly(state)
+            state, reward, done, info = game.step(action)
+
+        n_actions.append(game.n_actions)
+        print(reward)
+    assert np.mean(n_actions) > 250, "Maybe too few actions, check"
 
 
 if __name__ == "__main__":
@@ -70,3 +82,4 @@ if __name__ == "__main__":
         game_speed_multiplier=1,
         render=True,
     )
+    # n_games()

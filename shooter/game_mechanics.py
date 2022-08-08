@@ -7,7 +7,7 @@ import pygame
 import torch
 from torch import nn
 
-from models import Bullet, DummyScreen, Spaceship
+from models import Bullet, DummyScreen, GameObject, Spaceship
 from utils import get_random_position, load_sprite, print_text
 
 GAME_SIZE = (800, 600)
@@ -45,8 +45,8 @@ def play_shooter(
         state, reward, done, info = game.step(action)
         total_return += reward
         if render:
-            time.sleep(0.5)
-
+            time.sleep(0.01)
+    print(game.n_actions)
     return total_return
 
 
@@ -116,24 +116,24 @@ class ShooterEnv:
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 64)
 
-    def _step(self, action: int, player: Spaceship) -> int:
-        """Takes a single step and returns the reward."""
+    def _step(self, action: int, player: Spaceship) -> None:
+        """Takes a single step for one player."""
 
         assert isinstance(action, int) and 0 <= action <= 3, "Action should be an integer 0-3"
         self._take_action(action, player)
-        winner = self._process_game_logic()
-        if winner is not None:
-            self.done = True
-            return int(winner == player)
-        return 0
 
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, Dict]:
-        reward = self._step(action, self.player1)
+        self._step(action, self.player1)
 
-        reward += (
-            self._step(self.opponent_choose_move(self.observation), self.player2)
-            * -1  # TODO: Flip the observation
-        )
+        # TODO: Flip the observation
+        self._step(self.opponent_choose_move(self.observation), self.player2)
+
+        winners = self._process_game_logic()
+
+        if winners is None or len(winners) > 1:  # Continuing game / Reservoir dogs ending
+            reward = 0
+        else:
+            reward = 1 if winners[0] == self.player1 else -1
 
         if self.render:
             self._draw()
@@ -207,28 +207,34 @@ class ShooterEnv:
         elif action == 3:
             player.shoot()
 
-    def _process_game_logic(self) -> Optional[Spaceship]:
+    def _process_game_logic(self) -> Optional[List[Spaceship]]:
 
         for game_object in self._get_game_objects():
             game_object.move(self.screen)
 
+        # Can get both players winning reservoir dogs style
+        winners = []
+
         for bullet in self.player1.bullets:
+            # Remove
             assert bullet.radius == 5
             if bullet.collides_with(self.player2):
-                self.message = "Player 1 wins!"
-                winner = self.player1
-                return winner
-            # Does this give player1 a slight advantage cos the
-            # collision is checked first?
+                self.done = True
+                self.message += "Player 1 wins!"
+                winners.append(self.player1)
         for bullet in self.player2.bullets:
             assert bullet.radius == 5
             if bullet.collides_with(self.player1):
-                self.message = "Player 2 wins!"
-                winner = self.player2
-                return winner
+                self.done = True
+                self.message += "Player 2 wins!"
+                winners.append(self.player2)
 
+        # Remove
+        assert len(self.player1.bullets) <= 2
+        assert len(self.player2.bullets) <= 2
         for bullet in self.player1.bullets:
-            # TODO: wont work with dummy screen
+            # Remove
+            assert self.screen.get_rect() == pygame.Rect(0, 0, GAME_SIZE[0], GAME_SIZE[1])
             if not self.screen.get_rect().collidepoint(bullet.position):
                 self.player1.bullets.remove(bullet)
 
@@ -236,9 +242,12 @@ class ShooterEnv:
             if not self.screen.get_rect().collidepoint(bullet.position):
                 self.player2.bullets.remove(bullet)
 
+        if winners:
+            return winners
         return None
 
-    def _draw(self):
+    def _draw(self) -> None:
+        assert not isinstance(self.screen, DummyScreen), "Don't call _draw() with a dummy screen"
         self.screen.blit(self.background, (0, 0))
 
         for game_object in self._get_game_objects():
@@ -250,7 +259,7 @@ class ShooterEnv:
         pygame.display.flip()
         self.clock.tick(60)
 
-    def _get_game_objects(self):
+    def _get_game_objects(self) -> List[GameObject]:
 
         game_objects = []
         if self.player1:
@@ -258,8 +267,5 @@ class ShooterEnv:
 
         if self.player2:
             game_objects.extend([self.player2, *self.player2.bullets])
-
-        # if self.player2:
-        #     game_objects.append(self.player2)
 
         return game_objects

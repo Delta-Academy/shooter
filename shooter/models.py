@@ -15,13 +15,13 @@ UP = Vector2(0, -1)
 class DummyScreen:
     def __init__(self, size: Tuple):
         self.size = size
+        self.rect = pygame.Rect(0, 0, size[0], size[1])
 
     def get_size(self) -> Tuple[int, int]:
         return self.size[0], self.size[1]
 
     def get_rect(self):
-        # TODO
-        pass
+        return self.rect
 
 
 class DummySprite(ABC):
@@ -80,7 +80,7 @@ class GameObject:
 class Spaceship(GameObject):
     ANGLE_TURN = 45
     ACCELERATION = 0.1
-    BULLET_SPEED = 5
+    BULLET_SPEED = 60
     NUM_BULLETS = 2  # Limit the number on the screen at one time
 
     def __init__(
