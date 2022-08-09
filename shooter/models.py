@@ -20,7 +20,7 @@ class DummyScreen:
     def get_size(self) -> Tuple[int, int]:
         return self.size[0], self.size[1]
 
-    def get_rect(self):
+    def get_rect(self) -> pygame.Rect:
         return self.rect
 
 
@@ -112,26 +112,26 @@ class Spaceship(GameObject):
             raise NotImplemented
         return self.player == other.player
 
-    def rotate(self, clockwise=True):
+    def rotate(self, clockwise: bool = True) -> None:
         sign = 1 if clockwise else -1
         angle = self.ANGLE_TURN * sign
         self.direction.rotate_ip(angle)
 
-    def accelerate(self):
+    def accelerate(self) -> None:
         self.velocity += self.direction * self.ACCELERATION
 
-    def move_forward(self):
+    def move_forward(self) -> None:
         distance = self.radius
         self.position += self.direction * distance
 
-    def draw(self, surface):
+    def draw(self, surface: pygame.Surface) -> None:
         angle = self.direction.angle_to(UP)
         rotated_surface = rotozoom(self.sprite, angle, 1.0)
         rotated_surface_size = Vector2(rotated_surface.get_size())
         blit_position = self.position - rotated_surface_size * 0.5
         surface.blit(rotated_surface, blit_position)
 
-    def shoot(self):
+    def shoot(self) -> None:
         # Limit number of bullets
         if len(self.bullets) == self.NUM_BULLETS:
             return

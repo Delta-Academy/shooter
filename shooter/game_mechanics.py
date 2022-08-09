@@ -106,7 +106,7 @@ class ShooterEnv:
         )
         self.done = False
         self.n_actions = 0
-        return self.observation, 0, False, {}
+        return self.observation_player1, 0, False, {}
 
     def init_graphics(self) -> None:
         pygame.init()
@@ -126,7 +126,7 @@ class ShooterEnv:
         self._step(action, self.player1)
 
         # TODO: Flip the observation
-        self._step(self.opponent_choose_move(self.observation), self.player2)
+        self._step(self.opponent_choose_move(self.observation_player2), self.player2)
 
         winners = self._process_game_logic()
 
@@ -138,22 +138,38 @@ class ShooterEnv:
         if self.render:
             self._draw()
 
-        return self.observation, reward, self.done, {}
+        return self.observation_player1, reward, self.done, {}
 
     @property
     def total_game_bullets(self) -> int:
         return self.player1.NUM_BULLETS * 2
 
     @property
-    def observation(self) -> np.ndarray:
+    def observation_player1(self) -> np.ndarray:
 
-        observation = np.zeros((2 + self.total_game_bullets) * 3)
+        observation_player1 = np.zeros((2 + self.total_game_bullets) * 3)
         for idx, object in enumerate(
-            [self.player1, self.player2, *self.player1.bullets, *self.player1.bullets]
+            [self.player1, self.player2, *self.player1.bullets, *self.player2.bullets]
         ):
-            fill = np.array([object.position[0], object.position[1], object.angle])
-            observation[idx * 3 : (idx + 1) * 3] = fill
-        return observation
+            observation_player1[idx * 3 : (idx + 1) * 3] = np.array(
+                [object.position[0], object.position[1], object.angle]
+            )
+
+        return observation_player1
+
+    @property
+    def observation_player2(self) -> np.ndarray:
+        observation_player2 = np.zeros((2 + self.total_game_bullets) * 3)
+
+        for idx, object in enumerate(
+            [self.player2, self.player1, *self.player2.bullets, *self.player1.bullets]
+        ):
+            # Keep an eye on this for bugs
+            observation_player2[idx * 3 : (idx + 1) * 3] = np.array(
+                [GAME_SIZE[0] - object.position[0], object.position[1], (360 - object.angle) % 360]
+            )
+
+        return observation_player2
 
     def main_loop(self) -> None:
         if self.render:

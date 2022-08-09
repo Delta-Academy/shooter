@@ -1,4 +1,3 @@
-import nntplib
 from typing import Any, Dict
 
 import numpy as np
@@ -40,18 +39,20 @@ def choose_move(state: Any, neural_network: nn.Module) -> int:
 
 
 def n_games() -> None:
-    n = 100
+    n = 1000
     n_actions = []
-    for _ in range(n):
+    rewards = []
+    for _ in tqdm(range(n)):
         game = ShooterEnv(choose_move_randomly, render=False)
         state, reward, done, info = game.reset()
         while not done:
             action = choose_move_randomly(state)
             state, reward, done, info = game.step(action)
 
+        rewards.append(reward)
         n_actions.append(game.n_actions)
-        print(reward)
     assert np.mean(n_actions) > 250, "Maybe too few actions, check"
+    print(f"Average reward = {np.mean(rewards)}")
 
 
 if __name__ == "__main__":
