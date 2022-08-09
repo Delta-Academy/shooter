@@ -2,13 +2,14 @@ import time
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
+import gym
 import numpy as np
 import pygame
 import torch
 from torch import nn
+from utils import get_random_position, load_sprite, print_text
 
 from models import Bullet, DummyScreen, GameObject, Spaceship
-from utils import get_random_position, load_sprite, print_text
 
 GAME_SIZE = (800, 600)
 # GAME_SIZE = (400, 300)
@@ -81,7 +82,7 @@ def choose_move_randomly(state: np.ndarray) -> int:
     return np.random.randint(4)
 
 
-class ShooterEnv:
+class ShooterEnv(gym.Env):
     def __init__(self, opponent_choose_move: Callable, render: bool):
 
         self.render = render
@@ -92,6 +93,11 @@ class ShooterEnv:
             self.screen = DummyScreen(GAME_SIZE)
 
         self.reset()
+        self.num_envs = 1
+        self.action_space = gym.spaces.Discrete(4)
+        self.observation_space = gym.spaces.Box(low=0, high=1000, shape=(self.n_observations,))
+
+        self.metadata = ""
 
     def reset(self) -> Tuple[np.ndarray, float, bool, Dict]:
         self.message = ""
@@ -106,7 +112,7 @@ class ShooterEnv:
         )
         self.done = False
         self.n_actions = 0
-        return self.observation_player1, 0, False, {}
+        return self.observation_player1
 
     def init_graphics(self) -> None:
         pygame.init()
@@ -119,13 +125,14 @@ class ShooterEnv:
     def _step(self, action: int, player: Spaceship) -> None:
         """Takes a single step for one player."""
 
-        assert isinstance(action, int) and 0 <= action <= 3, "Action should be an integer 0-3"
+        assert (
+            isinstance(action, (int, np.int64)) and 0 <= action <= 3
+        ), "Action should be an integer 0-3"
         self._take_action(action, player)
 
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, Dict]:
         self._step(action, self.player1)
 
-        # TODO: Flip the observation
         self._step(self.opponent_choose_move(self.observation_player2), self.player2)
 
         winners = self._process_game_logic()
@@ -145,28 +152,40 @@ class ShooterEnv:
         return self.player1.NUM_BULLETS * 2
 
     @property
+    def n_observations(self):
+        return (2 + self.total_game_bullets) * 3
+
+    @property
     def observation_player1(self) -> np.ndarray:
 
-        observation_player1 = np.zeros((2 + self.total_game_bullets) * 3)
+        observation_player1 = np.zeros(self.n_observations)
         for idx, object in enumerate(
             [self.player1, self.player2, *self.player1.bullets, *self.player2.bullets]
         ):
             observation_player1[idx * 3 : (idx + 1) * 3] = np.array(
-                [object.position[0], object.position[1], object.angle]
+                [
+                    object.position[0] / GAME_SIZE[0],  # Divide by the max value
+                    object.position[1] / GAME_SIZE[1],
+                    object.angle / 360,
+                ]
             )
 
         return observation_player1
 
     @property
     def observation_player2(self) -> np.ndarray:
-        observation_player2 = np.zeros((2 + self.total_game_bullets) * 3)
+        observation_player2 = np.zeros(self.n_observations)
 
         for idx, object in enumerate(
             [self.player2, self.player1, *self.player2.bullets, *self.player1.bullets]
         ):
             # Keep an eye on this for bugs
             observation_player2[idx * 3 : (idx + 1) * 3] = np.array(
-                [GAME_SIZE[0] - object.position[0], object.position[1], (360 - object.angle) % 360]
+                [
+                    (GAME_SIZE[0] - object.position[0]) / GAME_SIZE[0],
+                    object.position[1] / GAME_SIZE[1],
+                    ((360 - object.angle) % 360) / 360,
+                ]
             )
 
         return observation_player2
