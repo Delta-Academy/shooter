@@ -95,9 +95,11 @@ class ShooterEnv(gym.Env):
         self.reset()
         self.num_envs = 1
         self.action_space = gym.spaces.Discrete(4)
-        self.observation_space = gym.spaces.Box(low=0, high=1000, shape=(self.n_observations,))
+        self.observation_space = gym.spaces.Box(low=0, high=1, shape=(self.n_observations,))
 
         self.metadata = ""
+        if self.render:
+            self._draw()
 
     def reset(self) -> Tuple[np.ndarray, float, bool, Dict]:
         self.message = ""
@@ -232,6 +234,8 @@ class ShooterEnv(gym.Env):
 
     def _take_action(self, action: int, player: Spaceship) -> None:
         self.n_actions += 1
+        if self.n_actions % 100 == 0:
+            print(self.n_actions)
         player.velocity *= 0
         if action == 0:
             player.rotate(clockwise=True)
