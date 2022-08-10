@@ -17,6 +17,7 @@ rankings/
 team_store/
 *.pkl
 !*winner.pkl
+*.zip
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

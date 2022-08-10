@@ -7,9 +7,9 @@ import numpy as np
 import pygame
 import torch
 from torch import nn
-from utils import get_random_position, load_sprite, print_text
 
 from models import Bullet, DummyScreen, GameObject, Spaceship
+from utils import get_random_position, load_sprite, print_text
 
 GAME_SIZE = (800, 600)
 # GAME_SIZE = (400, 300)
@@ -47,7 +47,6 @@ def play_shooter(
         total_return += reward
         if render:
             time.sleep(0.01)
-    print(game.n_actions)
     return total_return
 
 
@@ -95,7 +94,8 @@ class ShooterEnv(gym.Env):
         self.reset()
         self.num_envs = 1
         self.action_space = gym.spaces.Discrete(4)
-        self.observation_space = gym.spaces.Box(low=0, high=1, shape=(self.n_observations,))
+        # self.observation_space = gym.spaces.Box(low=0, high=1, shape=(self.n_observations,))
+        self.observation_space = gym.spaces.Box(low=0, high=1000, shape=(self.n_observations,))
 
         self.metadata = ""
         if self.render:
@@ -114,6 +114,8 @@ class ShooterEnv(gym.Env):
         )
         self.done = False
         self.n_actions = 0
+        # Players should see themselves as in the same place after reset
+        assert np.all(self.observation_player2 == self.observation_player1)
         return self.observation_player1
 
     def init_graphics(self) -> None:
@@ -130,6 +132,10 @@ class ShooterEnv(gym.Env):
         assert (
             isinstance(action, (int, np.int64)) and 0 <= action <= 3
         ), "Action should be an integer 0-3"
+        # if action in {0, 1} and player == self.player2:
+        #     # Turning is in the reversed direction
+        #     action = int(not action)
+
         self._take_action(action, player)
 
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, Dict]:
@@ -147,6 +153,7 @@ class ShooterEnv(gym.Env):
         if self.render:
             self._draw()
 
+        # assert np.all(self.observation_player2 == self.observation_player1)
         return self.observation_player1, reward, self.done, {}
 
     @property
@@ -234,8 +241,6 @@ class ShooterEnv(gym.Env):
 
     def _take_action(self, action: int, player: Spaceship) -> None:
         self.n_actions += 1
-        if self.n_actions % 100 == 0:
-            print(self.n_actions)
         player.velocity *= 0
         if action == 0:
             player.rotate(clockwise=True)

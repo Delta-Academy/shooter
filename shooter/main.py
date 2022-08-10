@@ -1,11 +1,13 @@
 import time
-from gc import callbacks
-from pyexpat import model
-from typing import Any, Dict
+from typing import Any
 
 import gym
 import matplotlib.pyplot as plt
 import numpy as np
+from stable_baselines3 import PPO
+from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.utils import obs_as_tensor, safe_mean
+from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 from torch import nn
 from tqdm import tqdm
 
@@ -17,10 +19,6 @@ from game_mechanics import (
     play_shooter,
     save_network,
 )
-from stable_baselines3 import PPO
-from stable_baselines3.common.callbacks import BaseCallback
-from stable_baselines3.common.utils import obs_as_tensor, safe_mean
-from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 
 TEAM_NAME = "Team Jimmy"  # <---- Enter your team name here!
 assert TEAM_NAME != "Team Name", "Please change your TEAM_NAME!"
@@ -36,6 +34,11 @@ class CustomCallback(BaseCallback):
     def __init__(self, verbose=0):
         super(CustomCallback, self).__init__(verbose)
         self.rewards = []
+        self.count = 0
+        self.fixed_env = ShooterEnv(choose_move_randomly, render=False)
+        self.n_steps = 0
+        self.track_performance = []
+        self.loss = []
         # Those variables will be accessible in the callback
         # (they are defined in the base class)
         # The RL model
@@ -55,52 +58,50 @@ class CustomCallback(BaseCallback):
         # self.parent = None  # type: Optional[BaseCallback]
 
     def _on_training_start(self) -> None:
-        """This method is called before the first rollout starts."""
-        pass
+        self.pbar = tqdm(total=self.model._total_timesteps)
 
     def _on_rollout_start(self) -> None:
-        """A rollout is the collection of environment interaction using the current policy.
+        """Called every n_steps."""
 
-        This event is triggered before collecting new samples.
-        """
-        pass
+        # self.count += 1
+        # n_test_games = 10
+        # n_wins = 0
+
+        # for _ in range(n_test_games):
+        #     obs = self.fixed_env.reset()
+        #     done = False
+        #     while not done:
+        #         action, _states = self.model.predict(obs, deterministic=True)
+        #         obs, reward, done, info = self.fixed_env.step(action)
+
+        #     if reward == 1:
+        #         n_wins += 1
+
+        # self.track_performance.append(n_wins / n_test_games)
 
     def _on_step(self) -> None:
-        """This method will be called by the model after each call to `env.step()`.
-
-        For child callback (of an `EventCallback`), this will be called
-        when the event is triggered.
-
-        :return: (bool) If the callback returns False, training is aborted early.
-        """
-        self.rewards.append(safe_mean([ep_info["r"] for ep_info in self.model.ep_info_buffer]))
-
-    def _on_rollout_end(self) -> None:
-        """This event is triggered before updating the policy."""
-        pass
+        """Called every step()"""
         # self.rewards.append(safe_mean([ep_info["r"] for ep_info in self.model.ep_info_buffer]))
-
-    def _on_training_end(self) -> None:
-        """This event is triggered before exiting the `learn()` method."""
-        pass
+        # self.n_steps += 1
+        self.pbar.update(1)
+        self.pbar.refresh()
+        # self.loss.append(self.model.policy_gradient_loss)
+        self.rewards.append(safe_mean([ep_info["r"] for ep_info in self.model.ep_info_buffer]))
 
 
 def train() -> nn.Module:
-    def model_predict_wrapper(obs):
-        return model.predict(obs, deterministic=True)[0]
+    """
+    TODO: Write this function to train your algorithm.
 
+    Returns:
+    """
     env = ShooterEnv(choose_move_randomly, render=False)
-    # env = ShooterEnv(model_predict_wrapper, render=False)
-    model = PPO("MlpPolicy", env, verbose=0, learning_rate=3e-4)
-
-    callback = CustomCallback()
-    # model.learn(total_timesteps=300_000, callback=callback)
-    model.learn(total_timesteps=100_000, callback=callback)
-    plt.plot(callback.rewards)
+    model = PPO("MlpPolicy", env, verbose=2)
+    model.learn(total_timesteps=100_000)
 
     env = ShooterEnv(choose_move_randomly, render=False)
 
-    n_test_games = 1000
+    n_test_games = 100
     n_wins = 0
 
     for _ in range(n_test_games):
@@ -114,6 +115,40 @@ def train() -> nn.Module:
             n_wins += 1
 
     print(n_wins / n_test_games)
+
+    model.save("Meaty_model")
+
+
+def train_new() -> nn.Module:
+    def model_predict_wrapper(obs):
+        return model.predict(obs, deterministic=True)[0]
+
+    env = ShooterEnv(choose_move_randomly, render=False)
+    # env = ShooterEnv(model_predict_wrapper, render=False)
+
+    model = PPO("MlpPolicy", env, verbose=0, learning_rate=3e-4)
+
+    callback = CustomCallback()
+    model.learn(total_timesteps=100_000, callback=callback)
+    plt.plot(callback.rewards)
+    # model.learn(total_timesteps=10_000, callback=callback)
+
+    env = ShooterEnv(choose_move_randomly, render=False)
+
+    n_test_games = 100
+    n_wins = 0
+
+    for _ in range(n_test_games):
+        obs = env.reset()
+        done = False
+        while not done:
+            action, _states = model.predict(obs, deterministic=True)
+            obs, reward, done, info = env.step(action)
+
+        if reward == 1:
+            n_wins += 1
+
+    print(f"Trained bot performance: {n_wins / n_test_games}")
     model.save("Meaty_model")
     1 / 0
 
@@ -122,14 +157,26 @@ def test():
     def model_predict_wrapper(obs):
         return model.predict(obs, deterministic=True)[0]
 
+    def choose_move_test(state):
+        print(state[2])
+        # Rotate clockwise
+        return 0
+
+        # Move Forward
+        # return 2
+
     model = PPO.load("Meaty_model")
-    env = ShooterEnv(choose_move_randomly, render=True)
+    # env = ShooterEnv(choose_move_randomly, render=True)
     # env = ShooterEnv(model_predict_wrapper, render=True)
+    env = ShooterEnv(model_predict_wrapper, render=True)
     obs = env.reset()
     done = False
-    time.sleep(5)
+    time.sleep(3)
     while not done:
-        action, _states = model.predict(obs, deterministic=True)
+        # action, _states = model.predict(obs, deterministic=True)
+        # action = choose_move_test(obs)
+        action = np.random.randint(3)
+
         obs, reward, done, info = env.step(action)
         time.sleep(0.2)
 
@@ -166,7 +213,7 @@ def n_games() -> None:
 if __name__ == "__main__":
 
     ## Example workflow, feel free to edit this! ###
-    # file = train()
+    file = train()
     # save_network(file, TEAM_NAME)
 
     # # check_submission(
@@ -174,7 +221,7 @@ if __name__ == "__main__":
     # # )  # <---- Make sure I pass! Or your solution will not work in the tournament!!
 
     # my_value_fn = load_network(TEAM_NAME)
-    test()
+    # test()
 
     # Code below plays a single game against a random
     #  opponent, think about how you might want to adapt this to

@@ -6,6 +6,7 @@ import pygame
 from pygame.math import Vector2
 from pygame.surface import Surface
 from pygame.transform import rotozoom
+
 from utils import get_random_velocity, load_sound, load_sprite, wrap_position
 
 UP = Vector2(0, -1)
@@ -63,6 +64,7 @@ class GameObject:
     @property
     def angle(self) -> int:
         return int(self.direction.angle_to(UP))
+        # return round(self.direction.angle_to(UP)) % 360
 
     def draw(self, surface: pygame.Surface) -> None:
         blit_position = self.position - Vector2(self.radius)
