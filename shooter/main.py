@@ -1,5 +1,6 @@
 import time
-from typing import Any
+from traceback import print_tb
+from typing import Any, Dict
 
 import gym
 import matplotlib.pyplot as plt
@@ -90,13 +91,10 @@ class CustomCallback(BaseCallback):
 
 
 def train() -> nn.Module:
-    """
-    TODO: Write this function to train your algorithm.
 
-    Returns:
-    """
     env = ShooterEnv(choose_move_randomly, render=False)
     model = PPO("MlpPolicy", env, verbose=2)
+
     model.learn(total_timesteps=100_000)
 
     env = ShooterEnv(choose_move_randomly, render=False)
@@ -114,80 +112,30 @@ def train() -> nn.Module:
         if reward == 1:
             n_wins += 1
 
-    print(n_wins / n_test_games)
+    print(f"fraction games won = {n_wins / n_test_games}")
 
-    model.save("Meaty_model")
-
-
-def train_new() -> nn.Module:
-    def model_predict_wrapper(obs):
-        return model.predict(obs, deterministic=True)[0]
-
-    env = ShooterEnv(choose_move_randomly, render=False)
-    # env = ShooterEnv(model_predict_wrapper, render=False)
-
-    model = PPO("MlpPolicy", env, verbose=0, learning_rate=3e-4)
-
-    callback = CustomCallback()
-    model.learn(total_timesteps=100_000, callback=callback)
-    plt.plot(callback.rewards)
-    # model.learn(total_timesteps=10_000, callback=callback)
-
-    env = ShooterEnv(choose_move_randomly, render=False)
-
-    n_test_games = 100
-    n_wins = 0
-
-    for _ in range(n_test_games):
-        obs = env.reset()
-        done = False
-        while not done:
-            action, _states = model.predict(obs, deterministic=True)
-            obs, reward, done, info = env.step(action)
-
-        if reward == 1:
-            n_wins += 1
-
-    print(f"Trained bot performance: {n_wins / n_test_games}")
-    model.save("Meaty_model")
-    1 / 0
+    model.save(f"Meaty_model")
+    return n_wins / n_test_games
 
 
 def test():
-    def model_predict_wrapper(obs):
-        return model.predict(obs, deterministic=True)[0]
-
-    def choose_move_test(state):
-        print(state[2])
-        # Rotate clockwise
-        return 0
-
-        # Move Forward
-        # return 2
-
     model = PPO.load("Meaty_model")
-    # env = ShooterEnv(choose_move_randomly, render=True)
-    # env = ShooterEnv(model_predict_wrapper, render=True)
-    env = ShooterEnv(model_predict_wrapper, render=True)
+    env = ShooterEnv(choose_move_randomly, render=True)
     obs = env.reset()
     done = False
-    time.sleep(3)
     while not done:
-        # action, _states = model.predict(obs, deterministic=True)
-        # action = choose_move_test(obs)
-        action = np.random.randint(3)
-
+        action, _states = model.predict(obs, deterministic=True)
         obs, reward, done, info = env.step(action)
-        time.sleep(0.2)
+        time.sleep(0.4)
 
 
 def choose_move(state: Any, neural_network: nn.Module) -> int:
-    """Called during competitive play. It acts greedily given current state of the board and value
-    function dictionary. It returns a single move to play.
+    """Called during competitive play.
 
+    It acts greedily given current state of the board and value
+    function dictionary. It returns a single move to play.
     Args:
         state:
-
     Returns:
     """
     return choose_move_randomly(state)
@@ -213,7 +161,14 @@ def n_games() -> None:
 if __name__ == "__main__":
 
     ## Example workflow, feel free to edit this! ###
-    file = train()
+    t1 = time.time()
+    performance_verbose = train()
+
+    t2 = time.time()
+    print(f"time: {t2 - t1}")
+
+    1
+
     # save_network(file, TEAM_NAME)
 
     # # check_submission(
