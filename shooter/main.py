@@ -91,22 +91,28 @@ class CustomCallback(BaseCallback):
 
 def train() -> nn.Module:
 
-    env = ShooterEnv(choose_move_randomly, render=False)
-    model = PPO("MlpPolicy", env, verbose=2, clip_range=0.15)
+    ####### train ##########
 
-    model.learn(total_timesteps=200_000)
+    def model_predict_wrapper(obs):
+        return model.predict(obs, deterministic=False)[0]
 
-    env = ShooterEnv(choose_move_randomly, render=False)
+    env = ShooterEnv(model_predict_wrapper, render=False)
+    model = PPO("MlpPolicy", env, verbose=2)
+
+    model.learn(total_timesteps=5_000_000)
+
+    ####### test ##########
+    test_env = ShooterEnv(choose_move_randomly, render=False)
 
     n_test_games = 100
     n_wins = 0
 
     for _ in range(n_test_games):
-        obs = env.reset()
+        obs = test_env.reset()
         done = False
         while not done:
             action, _states = model.predict(obs, deterministic=True)
-            obs, reward, done, info = env.step(action)
+            obs, reward, done, info = test_env.step(action)
 
         if reward == 1:
             n_wins += 1
@@ -154,7 +160,7 @@ def test_graphics():
         done = False
         while not done:
             action, _states = model.predict(obs, deterministic=True)
-            print(action)
+            action = np.random.randint(4)
             obs, reward, done, info = env.step(action)
             time.sleep(0.1)
         time.sleep(2)

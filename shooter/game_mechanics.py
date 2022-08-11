@@ -8,7 +8,7 @@ import pygame
 import torch
 from torch import nn
 
-from models import Bullet, DummyScreen, GameObject, Spaceship
+from models import BARRIERS, Barrier, Bullet, DummyScreen, GameObject, Spaceship
 from utils import get_random_position, load_sprite, print_text
 
 GAME_SIZE = (600, 450)
@@ -103,18 +103,13 @@ class ShooterEnv(gym.Env):
 
     def reset(self) -> Tuple[np.ndarray, float, bool, Dict]:
         self.message = ""
-        self.asteroids: List[Bullet] = []
-        # player1_starting_pos = (GAME_SIZE[0] // 4, GAME_SIZE[1] // 2)
-        # player2_starting_pos = (int(GAME_SIZE[0] // (4 / 3)), GAME_SIZE[1] // 2)
+        player1_starting_pos = (GAME_SIZE[0] // 4, GAME_SIZE[1] // 2)
+        player2_starting_pos = (int(GAME_SIZE[0] // (4 / 3)), GAME_SIZE[1] // 2)
 
-        player1_starting_pos = (np.random.randint(GAME_SIZE[0]), np.random.randint(GAME_SIZE[1]))
-        player2_starting_pos = (np.random.randint(GAME_SIZE[0]), np.random.randint(GAME_SIZE[1]))
+        # player1_starting_pos = (np.random.randint(GAME_SIZE[0]), np.random.randint(GAME_SIZE[1]))
+        # player2_starting_pos = (np.random.randint(GAME_SIZE[0]), np.random.randint(GAME_SIZE[1]))
         self.player1 = Spaceship(player1_starting_pos, player=1, graphical=self.render)
-        self.player2 = Spaceship(
-            player2_starting_pos,
-            player=2,
-            graphical=self.render,
-        )
+        self.player2 = Spaceship(player2_starting_pos, player=2, graphical=self.render)
         self.done = False
         self.n_actions = 0
         # Players should see themselves as in the same place after reset
@@ -289,11 +284,11 @@ class ShooterEnv(gym.Env):
         for bullet in self.player1.bullets:
             # Remove
             assert self.screen.get_rect() == pygame.Rect(0, 0, GAME_SIZE[0], GAME_SIZE[1])
-            if not self.screen.get_rect().collidepoint(bullet.position):
+            if not self.screen.get_rect().collidepoint(bullet.position) or bullet.hit_barrier:
                 self.player1.bullets.remove(bullet)
 
         for bullet in self.player2.bullets:
-            if not self.screen.get_rect().collidepoint(bullet.position):
+            if not self.screen.get_rect().collidepoint(bullet.position) or bullet.hit_barrier:
                 self.player2.bullets.remove(bullet)
 
         if winners:
@@ -322,4 +317,5 @@ class ShooterEnv(gym.Env):
         if not self.player2.dead:
             game_objects.extend([self.player2, *self.player2.bullets])
 
+        game_objects.extend(BARRIERS)
         return game_objects
