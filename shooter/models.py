@@ -9,6 +9,9 @@ from pygame.transform import rotozoom
 from utils import edge_barriers, get_random_velocity, load_sound, load_sprite, wrap_position
 
 UP = Vector2(0, -1)
+DOWN = Vector2(0, 1)
+RIGHT = Vector2(1, 0)
+LEFT = Vector2(-1, 0)
 
 
 GAME_SIZE = (600, 450)
@@ -66,13 +69,17 @@ class GameObject:
     def set_position(self, position: Tuple[int, int]) -> None:
         self.position = Vector2(position)
 
+    def set_orientation(self, orientation: Vector2):
+        print(orientation)
+        self.direction = Vector2(orientation)
+
     def face_up(self) -> None:
-        self.direction = Vector2(UP)
+        self.set_orientation(UP)
 
     @property
     def angle(self) -> int:
         # TODO: Make consistent with pong?
-        return int(self.direction.angle_to(UP))
+        return round(self.direction.angle_to(UP))
 
     def draw(self, surface: pygame.Surface) -> None:
         blit_position = self.position - Vector2(self.radius)
@@ -82,8 +89,11 @@ class GameObject:
         self.position = edge_barriers(self.position + self.velocity, self.radius, surface)
 
     def collides_with(self, other_obj: "GameObject") -> bool:
+        """Fudge factor stops bullets skipping over objects."""
+
+        fudge_factor = 1.5
         distance = self.position.distance_to(other_obj.position)
-        return distance < self.radius + other_obj.radius
+        return distance < (self.radius * fudge_factor) + (other_obj.radius * fudge_factor)
 
 
 class Spaceship(GameObject):
@@ -95,11 +105,13 @@ class Spaceship(GameObject):
     def __init__(
         self,
         starting_position: Tuple[int, int],
+        starting_orientation: Vector2,
         player: int,
         graphical: bool = True,
     ) -> None:
 
         self.starting_position = starting_position
+        self.starting_orientation = starting_orientation
         self.graphical = graphical
         self.player = player
         self.dead = False
@@ -113,11 +125,12 @@ class Spaceship(GameObject):
             super().__init__(starting_position, DummyShip(), Vector2(0))
             self.laser_sound = DummySound()
 
+        # self.radius *= 1.5
         self.reset()
 
     def reset(self) -> None:
         self.set_position(self.starting_position)
-        self.face_up()
+        self.set_orientation(self.starting_orientation)
 
         self.bullets: List[Bullet] = []
 

@@ -9,7 +9,18 @@ import pygame
 import torch
 from torch import nn
 
-from models import BARRIERS, Barrier, Bullet, DummyScreen, GameObject, Spaceship
+from models import (
+    BARRIERS,
+    DOWN,
+    LEFT,
+    RIGHT,
+    UP,
+    Barrier,
+    Bullet,
+    DummyScreen,
+    GameObject,
+    Spaceship,
+)
 from utils import get_random_position, load_sprite, print_text
 
 GAME_SIZE = (600, 450)
@@ -22,6 +33,9 @@ SPAWN_POINTS = [
     (GAME_SIZE[0] // 2, int(GAME_SIZE[1] * 0.1)),
     (GAME_SIZE[0] // 2, int(GAME_SIZE[1] * 0.9)),
 ]
+
+SPAWN_ORIENTATIONS = [RIGHT, LEFT, DOWN, UP]
+
 
 HERE = Path(__file__).parent.resolve()
 
@@ -85,7 +99,7 @@ def save_network(network: nn.Module, team_name: str) -> None:
 
 
 def choose_move_randomly(state: np.ndarray) -> int:
-    return np.random.randint(4)
+    return np.random.randint(3)
 
 
 class ShooterEnv(gym.Env):
@@ -112,17 +126,22 @@ class ShooterEnv(gym.Env):
         self.message = ""
         spawn_idx = list(range(len(SPAWN_POINTS)))
         random.shuffle(spawn_idx)
-        player1_starting_pos = SPAWN_POINTS[spawn_idx.pop()]
-        player2_starting_pos = SPAWN_POINTS[spawn_idx.pop()]
 
-        # player1_starting_pos = (GAME_SIZE[0] // 4, GAME_SIZE[1] // 2)
-        # player2_starting_pos = (int(GAME_SIZE[0] // (4 / 3)), GAME_SIZE[1] // 2)
+        player1_idx = spawn_idx.pop()
+        player2_idx = spawn_idx.pop()
 
-        # player1_starting_pos = (np.random.randint(GAME_SIZE[0]), np.random.randint(GAME_SIZE[1]))
-        # player2_starting_pos = (np.random.randint(GAME_SIZE[0]), np.random.randint(GAME_SIZE[1]))
-
-        self.player1 = Spaceship(player1_starting_pos, player=1, graphical=self.render)
-        self.player2 = Spaceship(player2_starting_pos, player=2, graphical=self.render)
+        self.player1 = Spaceship(
+            SPAWN_POINTS[player1_idx],
+            SPAWN_ORIENTATIONS[player1_idx],
+            player=1,
+            graphical=self.render,
+        )
+        self.player2 = Spaceship(
+            SPAWN_POINTS[player2_idx],
+            SPAWN_ORIENTATIONS[player2_idx],
+            player=2,
+            graphical=self.render,
+        )
         self.done = False
         self.n_actions = 0
         # Players should see themselves as in the same place after reset
@@ -188,7 +207,7 @@ class ShooterEnv(gym.Env):
                 [
                     object.position[0] / GAME_SIZE[0],  # Divide by the max value
                     object.position[1] / GAME_SIZE[1],
-                    object.angle / 360,
+                    object.angle % 360 / 360,
                 ]
             )
 
@@ -205,7 +224,7 @@ class ShooterEnv(gym.Env):
                 [
                     object.position[0] / GAME_SIZE[0],  # Divide by the max value
                     object.position[1] / GAME_SIZE[1],
-                    object.angle / 360,
+                    object.angle % 360 / 360,
                 ]
             )
 

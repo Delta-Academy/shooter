@@ -25,71 +25,6 @@ TEAM_NAME = "Team Jimmy"  # <---- Enter your team name here!
 assert TEAM_NAME != "Team Name", "Please change your TEAM_NAME!"
 
 
-class CustomCallback(BaseCallback):
-
-    """A custom callback that derives from ``BaseCallback``.
-
-    :param verbose: (int) Verbosity level 0: not output 1: info 2: debug
-    """
-
-    def __init__(self, verbose=0):
-        super(CustomCallback, self).__init__(verbose)
-        self.rewards = []
-        self.count = 0
-        self.fixed_env = ShooterEnv(choose_move_randomly, render=False)
-        self.n_steps = 0
-        self.track_performance = []
-        self.loss = []
-        # Those variables will be accessible in the callback
-        # (they are defined in the base class)
-        # The RL model
-        # self.model = None  # type: BaseRLModel
-        # An alias for self.model.get_env(), the environment used for training
-        # self.training_env = None  # type: Union[gym.Env, VecEnv, None]
-        # Number of time the callback was called
-        # self.n_calls = 0  # type: int
-        # self.num_timesteps = 0  # type: int
-        # local and global variables
-        # self.locals = None  # type: Dict[str, Any]
-        # self.globals = None  # type: Dict[str, Any]
-        # The logger object, used to report things in the terminal
-        # self.logger = None  # type: logger.Logger
-        # # Sometimes, for event callback, it is useful
-        # # to have access to the parent object
-        # self.parent = None  # type: Optional[BaseCallback]
-
-    def _on_training_start(self) -> None:
-        self.pbar = tqdm(total=self.model._total_timesteps)
-
-    def _on_rollout_start(self) -> None:
-        """Called every n_steps."""
-
-        # self.count += 1
-        # n_test_games = 10
-        # n_wins = 0
-
-        # for _ in range(n_test_games):
-        #     obs = self.fixed_env.reset()
-        #     done = False
-        #     while not done:
-        #         action, _states = self.model.predict(obs, deterministic=True)
-        #         obs, reward, done, info = self.fixed_env.step(action)
-
-        #     if reward == 1:
-        #         n_wins += 1
-
-        # self.track_performance.append(n_wins / n_test_games)
-
-    def _on_step(self) -> None:
-        """Called every step()"""
-        # self.rewards.append(safe_mean([ep_info["r"] for ep_info in self.model.ep_info_buffer]))
-        # self.n_steps += 1
-        self.pbar.update(1)
-        self.pbar.refresh()
-        # self.loss.append(self.model.policy_gradient_loss)
-        self.rewards.append(safe_mean([ep_info["r"] for ep_info in self.model.ep_info_buffer]))
-
-
 def train() -> nn.Module:
 
     ####### train ##########
@@ -97,10 +32,10 @@ def train() -> nn.Module:
     def model_predict_wrapper(obs):
         return model.predict(obs, deterministic=False)[0]
 
-    env = ShooterEnv(model_predict_wrapper, render=False)
+    env = ShooterEnv(choose_move_randomly, render=False)
     model = PPO("MlpPolicy", env, verbose=2)
 
-    model.learn(total_timesteps=5_000_000)
+    model.learn(total_timesteps=2_500_000)
 
     ####### test ##########
     test_env = ShooterEnv(choose_move_randomly, render=False)
@@ -151,7 +86,7 @@ def test_graphics():
     def model_predict_wrapper(obs):
         return model.predict(obs, deterministic=True)[0]
 
-    model = PPO.load("Meaty_model")
+    model = PPO.load("/Users/jamesrowland/Code/shooter/shooter/Meaty_bigboy_model.zip")
     done = False
 
     n_games = 3
@@ -160,8 +95,9 @@ def test_graphics():
         obs = env.reset()
         done = False
         while not done:
-            action, _states = model.predict(obs, deterministic=True)
-            action = np.random.randint(4)
+            print(obs)
+            # action, _states = model.predict(obs, deterministic=True)
+            action = 3
             obs, reward, done, info = env.step(action)
             time.sleep(0.1)
         time.sleep(2)
@@ -199,6 +135,8 @@ def n_games() -> None:
 if __name__ == "__main__":
 
     # ## Example workflow, feel free to edit this! ###
+    np.set_printoptions(suppress=True)
+
     do_a_train = False
     if do_a_train:
 
