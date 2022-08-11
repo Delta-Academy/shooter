@@ -265,13 +265,21 @@ class ShooterEnv(gym.Env):
             if bullet.collides_with(self.player2):
                 self.done = True
                 self.message += "Player 1 wins!"
+                if self.render:
+                    self.player2.dead = True
+                    self._draw()
+
                 winners.append(self.player1)
+
         for bullet in self.player2.bullets:
             assert bullet.radius == 5
             if bullet.collides_with(self.player1):
                 self.done = True
                 self.message += "Player 2 wins!"
                 winners.append(self.player2)
+                if self.render:
+                    self.player1.dead = True
+                    self._draw()
 
         # Remove
         assert len(self.player1.bullets) <= 2
@@ -306,10 +314,10 @@ class ShooterEnv(gym.Env):
     def _get_game_objects(self) -> List[GameObject]:
 
         game_objects = []
-        if self.player1:
+        if not self.player1.dead:
             game_objects.extend([self.player1, *self.player1.bullets])
 
-        if self.player2:
+        if not self.player2.dead:
             game_objects.extend([self.player2, *self.player2.bullets])
 
         return game_objects

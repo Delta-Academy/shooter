@@ -119,14 +119,15 @@ def train() -> nn.Module:
 
 
 def test():
-    model = PPO.load("Meaty_model")
+    model = PPO.load("angle_15wins75percent")
     env = ShooterEnv(choose_move_randomly, render=True)
     obs = env.reset()
     done = False
     while not done:
         action, _states = model.predict(obs, deterministic=True)
         obs, reward, done, info = env.step(action)
-        time.sleep(0.4)
+        time.sleep(0.1)
+    time.sleep(10)
 
 
 def choose_move(state: Any, neural_network: nn.Module) -> int:
@@ -160,12 +161,13 @@ def n_games() -> None:
 
 if __name__ == "__main__":
 
-    ## Example workflow, feel free to edit this! ###
-    t1 = time.time()
-    performance_verbose = train()
+    # ## Example workflow, feel free to edit this! ###
+    # t1 = time.time()
+    # performance_verbose = train()
 
-    t2 = time.time()
-    print(f"time: {t2 - t1}")
+    # t2 = time.time()
+    # print(f"time: {t2 - t1}")
+    # test()
 
     1
 
@@ -176,7 +178,7 @@ if __name__ == "__main__":
     # # )  # <---- Make sure I pass! Or your solution will not work in the tournament!!
 
     # my_value_fn = load_network(TEAM_NAME)
-    # test()
+    test()
 
     # Code below plays a single game against a random
     #  opponent, think about how you might want to adapt this to

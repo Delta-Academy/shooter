@@ -75,11 +75,11 @@ class GameObject:
 
     def collides_with(self, other_obj: "GameObject") -> bool:
         distance = self.position.distance_to(other_obj.position)
-        return distance < self.radius + other_obj.radius
+        return distance < (self.radius * 2) + other_obj.radius
 
 
 class Spaceship(GameObject):
-    ANGLE_TURN = 45
+    ANGLE_TURN = 15
     ACCELERATION = 0.1
     BULLET_SPEED = 60
     NUM_BULLETS = 2  # Limit the number on the screen at one time
@@ -92,6 +92,7 @@ class Spaceship(GameObject):
         self.starting_position = starting_position
         self.graphical = graphical
         self.player = player
+        self.dead = False
 
         if self.graphical:
             super().__init__(starting_position, load_sprite("spaceship"), Vector2(0))
