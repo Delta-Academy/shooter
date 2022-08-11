@@ -95,7 +95,9 @@ class Spaceship(GameObject):
         self.dead = False
 
         if self.graphical:
-            super().__init__(starting_position, load_sprite("spaceship"), Vector2(0))
+            super().__init__(
+                starting_position, load_sprite(f"spaceship_player{player}"), Vector2(0)
+            )
             self.laser_sound = load_sound("laser")
         else:
             super().__init__(starting_position, DummyShip(), Vector2(0))

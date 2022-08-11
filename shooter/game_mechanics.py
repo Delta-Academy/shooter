@@ -11,7 +11,7 @@ from torch import nn
 from models import Bullet, DummyScreen, GameObject, Spaceship
 from utils import get_random_position, load_sprite, print_text
 
-GAME_SIZE = (800, 600)
+GAME_SIZE = (600, 450)
 # GAME_SIZE = (400, 300)
 # GAME_SIZE = (200, 150)
 
@@ -104,18 +104,21 @@ class ShooterEnv(gym.Env):
     def reset(self) -> Tuple[np.ndarray, float, bool, Dict]:
         self.message = ""
         self.asteroids: List[Bullet] = []
-        self.player1 = Spaceship(
-            (GAME_SIZE[0] // 4, GAME_SIZE[1] // 2), player=1, graphical=self.render
-        )
+        # player1_starting_pos = (GAME_SIZE[0] // 4, GAME_SIZE[1] // 2)
+        # player2_starting_pos = (int(GAME_SIZE[0] // (4 / 3)), GAME_SIZE[1] // 2)
+
+        player1_starting_pos = (np.random.randint(GAME_SIZE[0]), np.random.randint(GAME_SIZE[1]))
+        player2_starting_pos = (np.random.randint(GAME_SIZE[0]), np.random.randint(GAME_SIZE[1]))
+        self.player1 = Spaceship(player1_starting_pos, player=1, graphical=self.render)
         self.player2 = Spaceship(
-            (int(GAME_SIZE[0] // (4 / 3)), GAME_SIZE[1] // 2),
+            player2_starting_pos,
             player=2,
             graphical=self.render,
         )
         self.done = False
         self.n_actions = 0
         # Players should see themselves as in the same place after reset
-        assert np.all(self.observation_player2 == self.observation_player1)
+        # assert np.all(self.observation_player2 == self.observation_player1)
         return self.observation_player1
 
     def init_graphics(self) -> None:

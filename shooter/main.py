@@ -1,5 +1,4 @@
 import time
-from traceback import print_tb
 from typing import Any, Dict
 
 import gym
@@ -93,9 +92,9 @@ class CustomCallback(BaseCallback):
 def train() -> nn.Module:
 
     env = ShooterEnv(choose_move_randomly, render=False)
-    model = PPO("MlpPolicy", env, verbose=2)
+    model = PPO("MlpPolicy", env, verbose=2, clip_range=0.15)
 
-    model.learn(total_timesteps=100_000)
+    model.learn(total_timesteps=200_000)
 
     env = ShooterEnv(choose_move_randomly, render=False)
 
@@ -119,7 +118,7 @@ def train() -> nn.Module:
 
 
 def test():
-    model = PPO.load("angle_15wins75percent")
+    model = PPO.load("Meaty_model")
     env = ShooterEnv(choose_move_randomly, render=True)
     obs = env.reset()
     done = False
@@ -127,7 +126,7 @@ def test():
         action, _states = model.predict(obs, deterministic=True)
         obs, reward, done, info = env.step(action)
         time.sleep(0.1)
-    time.sleep(10)
+    time.sleep
 
 
 def choose_move(state: Any, neural_network: nn.Module) -> int:
