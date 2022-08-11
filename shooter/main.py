@@ -145,14 +145,19 @@ def test_graphics():
         return model.predict(obs, deterministic=True)[0]
 
     model = PPO.load("Meaty_model")
-    env = ShooterEnv(choose_move_randomly, render=True)
-    obs = env.reset()
     done = False
-    while not done:
-        action, _states = model.predict(obs, deterministic=True)
-        obs, reward, done, info = env.step(action)
-        time.sleep(0.1)
-    time.sleep
+
+    n_games = 3
+    env = ShooterEnv(choose_move_randomly, render=True)
+    for game in range(n_games):
+        obs = env.reset()
+        done = False
+        while not done:
+            action, _states = model.predict(obs, deterministic=True)
+            print(action)
+            obs, reward, done, info = env.step(action)
+            time.sleep(0.1)
+        time.sleep(2)
 
 
 def choose_move(state: Any, neural_network: nn.Module) -> int:
@@ -187,14 +192,15 @@ def n_games() -> None:
 if __name__ == "__main__":
 
     # ## Example workflow, feel free to edit this! ###
-    # t1 = time.time()
-    # performance_verbose = train()
+    do_a_train = False
+    if do_a_train:
 
-    # t2 = time.time()
-    # print(f"time: {t2 - t1}")
-    # test()
+        t1 = time.time()
+        performance_verbose = train()
 
-    1
+        t2 = time.time()
+        print(f"time: {t2 - t1}")
+        1
 
     # save_network(file, TEAM_NAME)
 
@@ -203,7 +209,7 @@ if __name__ == "__main__":
     # # )  # <---- Make sure I pass! Or your solution will not work in the tournament!!
 
     # my_value_fn = load_network(TEAM_NAME)
-    test()
+    test_graphics()
 
     # Code below plays a single game against a random
     #  opponent, think about how you might want to adapt this to

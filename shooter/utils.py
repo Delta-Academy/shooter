@@ -31,6 +31,18 @@ def wrap_position(position, surface):
     return Vector2(x % w, y % h)
 
 
+def edge_barriers(position, radius, surface):
+    x, y = position
+    w, h = surface.get_size()
+
+    x = max(0 + radius, x)
+    x = min(w - radius, x)
+
+    y = max(0 + radius, y)
+    y = min(h - radius, y)
+    return Vector2(x, y)
+
+
 def get_random_position(surface):
     return Vector2(
         random.randrange(surface.get_width()),
