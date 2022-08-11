@@ -15,6 +15,7 @@ from check_submission import check_submission
 from game_mechanics import (
     ShooterEnv,
     choose_move_randomly,
+    human_player,
     load_network,
     play_shooter,
     save_network,
@@ -154,7 +155,7 @@ def test_graphics():
     done = False
 
     n_games = 3
-    env = ShooterEnv(choose_move_randomly, render=True)
+    env = ShooterEnv(human_player, render=True)
     for game in range(n_games):
         obs = env.reset()
         done = False

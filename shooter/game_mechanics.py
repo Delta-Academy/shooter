@@ -1,3 +1,4 @@
+import random
 import time
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
@@ -15,6 +16,12 @@ GAME_SIZE = (600, 450)
 # GAME_SIZE = (400, 300)
 # GAME_SIZE = (200, 150)
 
+SPAWN_POINTS = [
+    (int(GAME_SIZE[0] * 0.1), GAME_SIZE[1] // 2),
+    (int(GAME_SIZE[0] * 0.9), GAME_SIZE[1] // 2),
+    (GAME_SIZE[0] // 2, int(GAME_SIZE[1] * 0.1)),
+    (GAME_SIZE[0] // 2, int(GAME_SIZE[1] * 0.9)),
+]
 
 HERE = Path(__file__).parent.resolve()
 
@@ -103,11 +110,17 @@ class ShooterEnv(gym.Env):
 
     def reset(self) -> Tuple[np.ndarray, float, bool, Dict]:
         self.message = ""
-        player1_starting_pos = (GAME_SIZE[0] // 4, GAME_SIZE[1] // 2)
-        player2_starting_pos = (int(GAME_SIZE[0] // (4 / 3)), GAME_SIZE[1] // 2)
+        spawn_idx = list(range(len(SPAWN_POINTS)))
+        random.shuffle(spawn_idx)
+        player1_starting_pos = SPAWN_POINTS[spawn_idx.pop()]
+        player2_starting_pos = SPAWN_POINTS[spawn_idx.pop()]
+
+        # player1_starting_pos = (GAME_SIZE[0] // 4, GAME_SIZE[1] // 2)
+        # player2_starting_pos = (int(GAME_SIZE[0] // (4 / 3)), GAME_SIZE[1] // 2)
 
         # player1_starting_pos = (np.random.randint(GAME_SIZE[0]), np.random.randint(GAME_SIZE[1]))
         # player2_starting_pos = (np.random.randint(GAME_SIZE[0]), np.random.randint(GAME_SIZE[1]))
+
         self.player1 = Spaceship(player1_starting_pos, player=1, graphical=self.render)
         self.player2 = Spaceship(player2_starting_pos, player=2, graphical=self.render)
         self.done = False
@@ -139,7 +152,9 @@ class ShooterEnv(gym.Env):
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, Dict]:
         self._step(action, self.player1)
 
-        self._step(self.opponent_choose_move(self.observation_player2), self.player2)
+        opponent_move = self.opponent_choose_move(self.observation_player2)
+        if opponent_move is not None:
+            self._step(opponent_move, self.player2)
 
         winners = self._process_game_logic()
 
@@ -216,25 +231,6 @@ class ShooterEnv(gym.Env):
                 self._take_action(np.random.randint(4), self.player1)
                 self._take_action(np.random.randint(4), self.player2)
                 self._process_game_logic()
-
-    def _handle_input(self) -> None:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT or (
-                event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE
-            ):
-                quit()
-            elif self.player1 and event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                self.player1.shoot()
-
-        is_key_pressed = pygame.key.get_pressed()
-
-        if self.player1:
-            if is_key_pressed[pygame.K_RIGHT]:
-                self.player1.rotate(clockwise=True)
-            elif is_key_pressed[pygame.K_LEFT]:
-                self.player1.rotate(clockwise=False)
-            if is_key_pressed[pygame.K_UP]:
-                self.player1.accelerate()
 
     def _take_action(self, action: int, player: Spaceship) -> None:
         self.n_actions += 1
@@ -319,3 +315,22 @@ class ShooterEnv(gym.Env):
 
         game_objects.extend(BARRIERS)
         return game_objects
+
+
+def human_player(state) -> Optional[int]:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT or (
+            event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE
+        ):
+            quit()
+        elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+            return 3
+    is_key_pressed = pygame.key.get_pressed()
+    if is_key_pressed[pygame.K_RIGHT]:
+        return 0
+    elif is_key_pressed[pygame.K_LEFT]:
+        return 1
+    if is_key_pressed[pygame.K_UP]:
+        return 2
+
+    return None

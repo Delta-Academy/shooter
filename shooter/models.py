@@ -11,6 +11,9 @@ from utils import edge_barriers, get_random_velocity, load_sound, load_sprite, w
 UP = Vector2(0, -1)
 
 
+GAME_SIZE = (600, 450)
+
+
 class DummyScreen:
     def __init__(self, size: Tuple):
         self.size = size
@@ -172,6 +175,10 @@ class Bullet(GameObject):
                     self.set_position((barrier.center[0], new_position[1]))
                     self.hit_barrier = True
                     return
+                elif barrier.orientation == "horizontal":
+                    self.set_position((new_position[0], barrier.center[1]))
+                    self.hit_barrier = True
+                    return
         self.set_position(new_position)
 
 
@@ -185,9 +192,16 @@ class Barrier(GameObject):
             self.end1 = (self.center[0], self.center[1] - self.length // 2)
             self.end2 = (self.center[0], self.center[1] + self.length // 2)
 
+        elif orientation == "horizontal":
+            self.end1 = (self.center[0] - self.length // 2, self.center[1])
+            self.end2 = (self.center[0] + self.length // 2, self.center[1])
+
     def hit_barrier(self, pos: Tuple, new_pos, radius) -> bool:
         """There's probably a way to generalise this to diagonal barriers with linear algebra but
-        cba."""
+        cba.
+
+        (wow this function is janky)
+        """
         x, y = pos
         x_new, y_new = new_pos
         if self.orientation == "vertical":
@@ -195,24 +209,45 @@ class Barrier(GameObject):
             x_hit = (
                 min(x, x_new) - radius < self.center[0] and max(x, x_new) + radius > self.center[0]
             )
-            if y_hit and x_hit:
-                return True
+        elif self.orientation == "horizontal":
+            x_hit = min(x, x_new) > self.end1[0] - radius and max(x, x_new) < self.end2[0] + radius
+            y_hit = (
+                min(y, y_new) - radius < self.center[1] and max(y, y_new) + radius > self.center[1]
+            )
+
+        if y_hit and x_hit:
+            return True
         return False
 
     def draw(self, screen):
         pygame.draw.line(screen, (255, 255, 255), self.end1, self.end2)
-        pygame.display.flip()
+        # pygame.display.flip()
 
     def move(self, screen):
         pass
 
 
 # TODO: Move me
-GAME_SIZE = (600, 450)
+BARRIER_LENGTH = int(GAME_SIZE[1] * 0.2)
 BARRIERS = [
     Barrier(
         orientation="vertical",
-        center=(GAME_SIZE[0] // 2, GAME_SIZE[1] // 2),
-        length=GAME_SIZE[1],
+        center=(int(GAME_SIZE[0] * 0.2), int(GAME_SIZE[1] * 0.5)),
+        length=BARRIER_LENGTH,
+    ),
+    Barrier(
+        orientation="vertical",
+        center=(int(GAME_SIZE[0] * 0.8), int(GAME_SIZE[1] * 0.5)),
+        length=BARRIER_LENGTH,
+    ),
+    Barrier(
+        orientation="horizontal",
+        center=(int(GAME_SIZE[0] * 0.5), int(GAME_SIZE[1] * 0.2)),
+        length=BARRIER_LENGTH,
+    ),
+    Barrier(
+        orientation="horizontal",
+        center=(int(GAME_SIZE[0] * 0.5), int(GAME_SIZE[1] * 0.8)),
+        length=BARRIER_LENGTH,
     ),
 ]
