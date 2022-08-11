@@ -191,12 +191,11 @@ class ShooterEnv(gym.Env):
         for idx, object in enumerate(
             [self.player2, self.player1, *self.player2.bullets, *self.player1.bullets]
         ):
-            # Keep an eye on this for bugs
             observation_player2[idx * 3 : (idx + 1) * 3] = np.array(
                 [
-                    (GAME_SIZE[0] - object.position[0]) / GAME_SIZE[0],
+                    object.position[0] / GAME_SIZE[0],  # Divide by the max value
                     object.position[1] / GAME_SIZE[1],
-                    ((360 - object.angle) % 360) / 360,
+                    object.angle / 360,
                 ]
             )
 

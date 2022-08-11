@@ -118,6 +118,32 @@ def train() -> nn.Module:
 
 
 def test():
+    def model_predict_wrapper(obs):
+        return model.predict(obs, deterministic=False)[0]
+
+    env = ShooterEnv(choose_move_randomly, render=False)
+    n_test_games = 100
+    n_wins = 0
+
+    model = PPO.load("Meaty_model")
+    for _ in range(n_test_games):
+        obs = env.reset()
+        done = False
+        while not done:
+            action = model_predict_wrapper(obs)
+            # action = choose_move_randomly(obs)
+            obs, reward, done, info = env.step(action)
+
+        if reward == 1:
+            n_wins += 1
+
+    print(f"fraction games won = {n_wins / n_test_games}")
+
+
+def test_graphics():
+    def model_predict_wrapper(obs):
+        return model.predict(obs, deterministic=True)[0]
+
     model = PPO.load("Meaty_model")
     env = ShooterEnv(choose_move_randomly, render=True)
     obs = env.reset()
