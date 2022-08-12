@@ -4,7 +4,7 @@ You control a space ship. A rival space-mob has entered your gangs patch.
 
 You must terminate it. And you must terminate it using RL.
 
-![Space shooter starting position](space-shooter.png)
+![Space shooter starting position](images/space-shooter.png)
 
 ## Rules of Space Shooter
 
@@ -39,7 +39,7 @@ You ship is not able to leave the arena, and you'd never do that to your space-g
 
 The competition & discussion will be in [Gather Town](https://app.gather.town/app/nJwquzJjD4TLKcTy/Delta%20Academy) at **6pm GMT on Sunday** (60 mins after submission deadline)!
 
-![Ex](.images/tournament_tree.png)
+![Ex](images/tournament_tree.png)
 
 ## Technical Details :hammer:
 
@@ -66,11 +66,12 @@ If you or your opponent have bullets that have not yet been fired, their locatio
 
 ### Actions :axe:
 
-**The index (0 -> 5) of the column and the index (0 -> 5) of the row to drop your counter into - as a Tuple (row, column).**
+**Actions** in space shooter are integers from the set {0,1,2,3}. They correspond to the following for your spaceship...
 
-In Othello, sometimes you will have no valid move to take but the game is not finished. In this case, you should return `None`.
-
-If a legal move is available you must play it. So only return `None` when no legal move is available.
+- **0**: Rotate your ship 15 degrees clockwise
+- **1**: Rotate your ship 15 degrees anti-clockwise
+- **2**: Move forward the direction you're facing
+- **3**: Shoot!
 
 ### Rewards :moneybag:
 
@@ -104,7 +105,7 @@ Also has a verbose mode, which when set to True prints to console the legal move
 The environment class controls the game and runs the opponent. It should be used for training your agent.
 <br />
 <br />
-See example usage in <code style="white-space:nowrap;">play_othello_game()</code>.
+See example usage in <code style="white-space:nowrap;">play_shooter()</code>.
 <br />
 <br />
 The opponent's <code style="white-space:nowrap;">choose_move</code> function is input at initialisation (when <code style="white-space:nowrap;">Env(opponent_choose_move)</code> is called). The first player is chosen at random when <code style="white-space:nowrap;">Env.reset()</code> is called. Every time you call <code style="white-space:nowrap;">Env.step()</code>, 2 moves are taken - yours and then your opponent's. Your opponent sees a 'flipped' version of the board, where his pieces are shown as <code style="white-space:nowrap;">1</code>'s and yours are shown as <code style="white-space:nowrap;">-1</code>'s.
@@ -133,8 +134,17 @@ Takes the state as input and outputs an action.
 </details>
 
 <details>
-<summary><code style="white-space:nowrap;">  play_othello_game()</code></summary>
-Plays 1 game of Othello, which can be visualsed in the console (if <code style="white-space:nowrap;">verbose=True</code>) . Outputs the return for your agent.
+<summary><code style="white-space:nowrap;">  human_player()</code></summary>
+    Use me as a function to play against your both with the keyboard!
+    Use the direction keys to move and the spacebar to shoot!
+<br />
+<br />
+Takes the state as input and outputs an action.
+</details>
+
+<details>
+<summary><code style="white-space:nowrap;">  play_shooter()</code></summary>
+Plays 1 game of shooter, which is visualised graphically. (if <code style="white-space:nowrap;">render=True</code>)
 <br />
 <br />
 Inputs:
@@ -162,5 +172,5 @@ If you want to tweak one, copy-paste it to `main.py` and rename it.
 3. Insert debugging messages - you want to make sure that:
    - Loss is decreasing :chart_with_downwards_trend:
    - The magnitude of update steps are decreasing :arrow_down:
-   - Performance on Othello is improving :arrow_up:
+   - Performance on shooter is improving :arrow_up:
 4. Iterate on the neural network architecture, hyperparameters & training algorithm

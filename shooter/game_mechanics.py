@@ -1,7 +1,7 @@
 import random
 import time
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import gym
 import numpy as np
@@ -24,8 +24,6 @@ from models import (
 from utils import get_random_position, load_sprite, print_text
 
 GAME_SIZE = (600, 450)
-# GAME_SIZE = (400, 300)
-# GAME_SIZE = (200, 150)
 
 SPAWN_POINTS = [
     (int(GAME_SIZE[0] * 0.1), GAME_SIZE[1] // 2),
@@ -61,13 +59,16 @@ def play_shooter(
     """
     total_return = 0.0
     game = ShooterEnv(opponent_choose_move, render=render)
-    state, reward, done, info = game.reset()
+
+    state = game.reset()
+    done = False
     while not done:
         action = your_choose_move(state)
         state, reward, done, info = game.step(action)
         total_return += reward
         if render:
-            time.sleep(0.01)
+            time.sleep(0.25 / game_speed_multiplier)
+
     return total_return
 
 
@@ -99,7 +100,7 @@ def save_network(network: nn.Module, team_name: str) -> None:
 
 
 def choose_move_randomly(state: np.ndarray) -> int:
-    return np.random.randint(3)
+    return np.random.randint(4)
 
 
 class ShooterEnv(gym.Env):
@@ -230,27 +231,6 @@ class ShooterEnv(gym.Env):
 
         return observation_player2
 
-    def main_loop(self) -> None:
-        if self.render:
-            while not self.done:
-                time.sleep(0.1)
-                # if play with keyboard  TODO: Implement flag
-                # self._handle_input()
-                assert self.player1.radius == 20
-                assert self.player2.radius == 20
-                self._take_action(np.random.randint(4), self.player1)
-                self._take_action(np.random.randint(4), self.player2)
-                self._process_game_logic()
-                self._draw()
-
-        else:
-            while not self.done:
-                assert self.player1.radius == 20
-                assert self.player2.radius == 20
-                self._take_action(np.random.randint(4), self.player1)
-                self._take_action(np.random.randint(4), self.player2)
-                self._process_game_logic()
-
     def _take_action(self, action: int, player: Spaceship) -> None:
         self.n_actions += 1
         player.velocity *= 0
@@ -336,7 +316,7 @@ class ShooterEnv(gym.Env):
         return game_objects
 
 
-def human_player(state) -> Optional[int]:
+def human_player(state) -> Any:
     for event in pygame.event.get():
         if event.type == pygame.QUIT or (
             event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE

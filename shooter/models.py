@@ -70,7 +70,6 @@ class GameObject:
         self.position = Vector2(position)
 
     def set_orientation(self, orientation: Vector2):
-        print(orientation)
         self.direction = Vector2(orientation)
 
     def face_up(self) -> None:
