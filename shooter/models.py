@@ -178,6 +178,7 @@ class Bullet(GameObject):
             super().__init__(position, load_sprite("bullet"), velocity)
         else:
             super().__init__(position, DummyBullet(), velocity)
+        self.set_orientation(velocity)
 
     def move(self, surface):
         new_position = self.position + self.velocity
