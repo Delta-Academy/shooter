@@ -33,6 +33,7 @@ def train() -> nn.Module:
         return model.predict(obs, deterministic=False)[0]
 
     env = ShooterEnv(choose_move_randomly, render=False)
+
     model = PPO("MlpPolicy", env, verbose=2)
 
     model.learn(total_timesteps=2_500_000)
@@ -86,7 +87,7 @@ def test_graphics():
     def model_predict_wrapper(obs):
         return model.predict(obs, deterministic=True)[0]
 
-    model = PPO.load("/Users/jamesrowland/Code/shooter/shooter/Meaty_bigboy_model.zip")
+    model = PPO.load("/Users/jamesrowland/Code/shooter/Meaty_model.zip")
     done = False
 
     n_games = 3
@@ -95,9 +96,7 @@ def test_graphics():
         obs = env.reset()
         done = False
         while not done:
-            print(obs)
-            # action, _states = model.predict(obs, deterministic=True)
-            action = 3
+            action, _ = model.predict(obs, deterministic=True)
             obs, reward, done, info = env.step(action)
             time.sleep(0.1)
         time.sleep(2)
@@ -112,7 +111,25 @@ def choose_move(state: Any, neural_network: nn.Module) -> int:
         state:
     Returns:
     """
-    return choose_move_randomly(state)
+
+    model = PPO.load("jimmy_baselines_model")
+    return model.predict(state)[0]
+    # done = False
+
+    # n_games = 3
+    # env = ShooterEnv(human_player, render=True)
+    # for game in range(n_games):
+    #     obs = env.reset()
+    #     done = False
+    #     while not done:
+    #         print(obs)
+    #         # action, _states = model.predict(obs, deterministic=True)
+    #         action = 3
+    #         obs, reward, done, info = env.step(action)
+    #         time.sleep(0.1)
+    #     time.sleep(2)
+
+    # return choose_move_randomly(state)
 
 
 def n_games() -> None:
@@ -135,17 +152,17 @@ def n_games() -> None:
 if __name__ == "__main__":
 
     # ## Example workflow, feel free to edit this! ###
-    np.set_printoptions(suppress=True)
+    # np.set_printoptions(suppress=True)
 
-    do_a_train = False
-    if do_a_train:
+    # do_a_train = False
+    # if do_a_train:
 
-        t1 = time.time()
-        performance_verbose = train()
+    #     t1 = time.time()
+    #     performance_verbose = train()
 
-        t2 = time.time()
-        print(f"time: {t2 - t1}")
-        1
+    #     t2 = time.time()
+    #     print(f"time: {t2 - t1}")
+    #     1
 
     # save_network(file, TEAM_NAME)
 
