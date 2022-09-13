@@ -6,7 +6,7 @@ from pygame.math import Vector2
 from pygame.surface import Surface
 from pygame.transform import rotozoom
 
-from .utils import edge_barriers, get_random_velocity, load_sound, load_sprite, wrap_position
+from shooter_utils import edge_barriers, get_random_velocity, load_sound, load_sprite, wrap_position
 
 UP = Vector2(0, -1)
 DOWN = Vector2(0, 1)
@@ -114,6 +114,7 @@ class Spaceship(GameObject):
         self.graphical = graphical
         self.player = player
         self.dead = False
+        self.name = "spaceship"
 
         if self.graphical:
             super().__init__(
@@ -178,6 +179,7 @@ class Bullet(GameObject):
             super().__init__(position, load_sprite("bullet"), velocity)
         else:
             super().__init__(position, DummyBullet(), velocity)
+        self.name = "bullet"
 
     def move(self, surface):
         new_position = self.position + self.velocity
@@ -199,6 +201,7 @@ class Barrier(GameObject):
         self.orientation = orientation
         self.length = length
         self.center = center
+        self.name = "barrier"
 
         if orientation == "vertical":
             self.end1 = (self.center[0], self.center[1] - self.length // 2)

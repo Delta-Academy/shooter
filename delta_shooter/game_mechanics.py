@@ -13,17 +13,8 @@ import torch.optim as optim
 from torch import nn
 from torch.distributions import Categorical
 
-from shooter.competitor_code.models import (
-    BARRIERS,
-    DOWN,
-    LEFT,
-    RIGHT,
-    UP,
-    DummyScreen,
-    GameObject,
-    Spaceship,
-)
-from shooter.competitor_code.utils import load_sprite, print_text
+from models import BARRIERS, DOWN, LEFT, RIGHT, UP, DummyScreen, GameObject, Spaceship
+from shooter_utils import load_sprite, print_text
 
 GAME_SIZE = (600, 450)
 
