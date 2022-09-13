@@ -1,6 +1,5 @@
 import random
 import time
-from collections import deque
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -8,10 +7,7 @@ import gym
 import numpy as np
 import pygame
 import torch
-import torch.nn.functional as F
-import torch.optim as optim
 from torch import nn
-from torch.distributions import Categorical
 
 from models import BARRIERS, DOWN, LEFT, RIGHT, UP, DummyScreen, GameObject, Spaceship
 from shooter_utils import load_sprite, print_text
