@@ -1,5 +1,6 @@
 import random
 import time
+from collections import deque
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -7,21 +8,22 @@ import gym
 import numpy as np
 import pygame
 import torch
+import torch.nn.functional as F
+import torch.optim as optim
 from torch import nn
+from torch.distributions import Categorical
 
-from models import (
+from shooter.competitor_code.models import (
     BARRIERS,
     DOWN,
     LEFT,
     RIGHT,
     UP,
-    Barrier,
-    Bullet,
     DummyScreen,
     GameObject,
     Spaceship,
 )
-from utils import get_random_position, load_sprite, print_text
+from shooter.competitor_code.utils import load_sprite, print_text
 
 GAME_SIZE = (600, 450)
 
@@ -172,7 +174,7 @@ class ShooterEnv(gym.Env):
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, Dict]:
         self._step(action, self.player1)
 
-        opponent_move = self.opponent_choose_move(self.observation_player2)
+        opponent_move = self.opponent_choose_move(state=self.observation_player2)
         if opponent_move is not None:
             self._step(opponent_move, self.player2)
 
@@ -244,7 +246,6 @@ class ShooterEnv(gym.Env):
             player.shoot()
 
     def _process_game_logic(self) -> Optional[List[Spaceship]]:
-
         for game_object in self._get_game_objects():
             game_object.move(self.screen)
 
@@ -257,8 +258,8 @@ class ShooterEnv(gym.Env):
             if bullet.collides_with(self.player2):
                 self.done = True
                 self.message += "Player 1 wins!"
+                self.player2.dead = True
                 if self.render:
-                    self.player2.dead = True
                     self._draw()
 
                 winners.append(self.player1)
@@ -269,8 +270,8 @@ class ShooterEnv(gym.Env):
                 self.done = True
                 self.message += "Player 2 wins!"
                 winners.append(self.player2)
+                self.player1.dead = True
                 if self.render:
-                    self.player1.dead = True
                     self._draw()
 
         # Remove

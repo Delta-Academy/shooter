@@ -6,7 +6,7 @@ from pygame.math import Vector2
 from pygame.surface import Surface
 from pygame.transform import rotozoom
 
-from utils import edge_barriers, get_random_velocity, load_sound, load_sprite, wrap_position
+from .utils import edge_barriers, get_random_velocity, load_sound, load_sprite, wrap_position
 
 UP = Vector2(0, -1)
 DOWN = Vector2(0, 1)
@@ -178,7 +178,6 @@ class Bullet(GameObject):
             super().__init__(position, load_sprite("bullet"), velocity)
         else:
             super().__init__(position, DummyBullet(), velocity)
-        self.set_orientation(velocity)
 
     def move(self, surface):
         new_position = self.position + self.velocity
