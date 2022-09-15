@@ -49,15 +49,11 @@ def play_shooter(
     total_return = 0.0
     game = ShooterEnv(opponent_choose_move, render=render)
 
-    state = game.reset()
-    done = False
+    state, _, done, _ = game.reset()
     while not done:
         action = your_choose_move(state)
         state, reward, done, info = game.step(action)
         total_return += reward
-        if render:
-            time.sleep(0.25 / game_speed_multiplier)
-
     return total_return
 
 
@@ -93,11 +89,17 @@ def choose_move_randomly(state: np.ndarray) -> int:
 
 
 class ShooterEnv(gym.Env):
-    def __init__(self, opponent_choose_move: Callable, render: bool):
+    def __init__(
+        self,
+        opponent_choose_move: Callable,
+        render: bool = False,
+        game_speed_multiplier: float = 1,
+    ):
 
-        self.render = render
+        self._render = render
         self.opponent_choose_move = opponent_choose_move
-        if self.render:
+        self.game_speed_multiplier = game_speed_multiplier
+        if self._render:
             self.init_graphics()
         else:
             self.screen = DummyScreen(GAME_SIZE)
@@ -105,11 +107,8 @@ class ShooterEnv(gym.Env):
         self.reset()
         self.num_envs = 1
         self.action_space = gym.spaces.Discrete(4)
-        # self.observation_space = gym.spaces.Box(low=0, high=1, shape=(self.n_observations,))
-        self.observation_space = gym.spaces.Box(low=0, high=1000, shape=(self.n_observations,))
 
-        self.metadata = ""
-        if self.render:
+        if self._render:
             self._draw()
 
     def reset(self) -> Tuple[np.ndarray, float, bool, Dict]:
@@ -124,19 +123,17 @@ class ShooterEnv(gym.Env):
             SPAWN_POINTS[player1_idx],
             SPAWN_ORIENTATIONS[player1_idx],
             player=1,
-            graphical=self.render,
+            graphical=self._render,
         )
         self.player2 = Spaceship(
             SPAWN_POINTS[player2_idx],
             SPAWN_ORIENTATIONS[player2_idx],
             player=2,
-            graphical=self.render,
+            graphical=self._render,
         )
         self.done = False
         self.n_actions = 0
-        # Players should see themselves as in the same place after reset
-        # assert np.all(self.observation_player2 == self.observation_player1)
-        return self.observation_player1
+        return self.observation_player1, 0.0, False, {}
 
     def init_graphics(self) -> None:
         pygame.init()
@@ -152,10 +149,6 @@ class ShooterEnv(gym.Env):
         assert (
             isinstance(action, (int, np.int64)) and 0 <= action <= 3
         ), "Action should be an integer 0-3"
-        # if action in {0, 1} and player == self.player2:
-        #     # Turning is in the reversed direction
-        #     action = int(not action)
-
         self._take_action(action, player)
 
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, Dict]:
@@ -172,10 +165,10 @@ class ShooterEnv(gym.Env):
         else:
             reward = 1 if winners[0] == self.player1 else -1
 
-        if self.render:
+        if self._render:
             self._draw()
+            time.sleep(0.01 / self.game_speed_multiplier)
 
-        # assert np.all(self.observation_player2 == self.observation_player1)
         return self.observation_player1, reward, self.done, {}
 
     @property
@@ -246,27 +239,21 @@ class ShooterEnv(gym.Env):
                 self.done = True
                 self.message += "Player 1 wins!"
                 self.player2.dead = True
-                if self.render:
+                if self._render:
                     self._draw()
 
                 winners.append(self.player1)
 
         for bullet in self.player2.bullets:
-            assert bullet.radius == 5
             if bullet.collides_with(self.player1):
                 self.done = True
                 self.message += "Player 2 wins!"
                 winners.append(self.player2)
                 self.player1.dead = True
-                if self.render:
+                if self._render:
                     self._draw()
 
-        # Remove
-        assert len(self.player1.bullets) <= 2
-        assert len(self.player2.bullets) <= 2
         for bullet in self.player1.bullets:
-            # Remove
-            assert self.screen.get_rect() == pygame.Rect(0, 0, GAME_SIZE[0], GAME_SIZE[1])
             if not self.screen.get_rect().collidepoint(bullet.position) or bullet.hit_barrier:
                 self.player1.bullets.remove(bullet)
 
