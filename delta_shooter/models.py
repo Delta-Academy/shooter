@@ -6,7 +6,7 @@ from pygame.math import Vector2
 from pygame.surface import Surface
 from pygame.transform import rotozoom
 
-from shooter_utils import edge_barriers, get_random_velocity, load_sound, load_sprite, wrap_position
+from shooter_utils import edge_barriers, get_random_velocity, load_sound, load_sprite
 
 UP = Vector2(0, -1)
 DOWN = Vector2(0, 1)
@@ -18,7 +18,7 @@ GAME_SIZE = (600, 450)
 
 
 class DummyScreen:
-    def __init__(self, size: Tuple):
+    def __init__(self, size: Tuple[int, int]):
         self.size = size
         self.rect = pygame.Rect(0, 0, size[0], size[1])
 
@@ -56,20 +56,20 @@ Orientation = Literal["horizontal", "vertical"]
 class GameObject:
     def __init__(
         self,
-        starting_position: Tuple[int, int],
+        starting_position: Union[Tuple[int, int], Vector2],
         sprite: Union[Surface, DummySprite],
-        velocity: int,
+        velocity: Union[int, Vector2],
     ) -> None:
         self.set_position(starting_position)
         self.sprite = sprite
-        self.radius = sprite.get_width() / 2
+        self.radius = int(sprite.get_width() / 2)
         self.velocity = Vector2(velocity)
         self.face_up()
 
-    def set_position(self, position: Tuple[int, int]) -> None:
+    def set_position(self, position: Union[Tuple[int, int], Vector2]) -> None:
         self.position = Vector2(position)
 
-    def set_orientation(self, orientation: Vector2):
+    def set_orientation(self, orientation: Vector2) -> None:
         self.direction = Vector2(orientation)
 
     def face_up(self) -> None:
@@ -77,14 +77,14 @@ class GameObject:
 
     @property
     def angle(self) -> int:
-        # TODO: Make consistent with pong?
         return round(self.direction.angle_to(UP))
 
-    def draw(self, surface: pygame.Surface) -> None:
+    def draw(self, surface: pygame.surface.Surface) -> None:
+        assert isinstance(self.sprite, pygame.Surface)
         blit_position = self.position - Vector2(self.radius)
         surface.blit(self.sprite, blit_position)
 
-    def move(self, surface: pygame.Surface) -> None:
+    def move(self, surface: Union[pygame.surface.Surface, DummyScreen]) -> None:
         self.position = edge_barriers(self.position + self.velocity, self.radius, surface)
 
     def collides_with(self, other_obj: "GameObject") -> bool:
@@ -125,7 +125,6 @@ class Spaceship(GameObject):
             super().__init__(starting_position, DummyShip(), Vector2(0))
             self.laser_sound = DummySound()
 
-        # self.radius *= 1.5
         self.reset()
 
     def reset(self) -> None:
@@ -155,8 +154,9 @@ class Spaceship(GameObject):
                 return
         self.position = new_position
 
-    def draw(self, surface: pygame.Surface) -> None:
+    def draw(self, surface: pygame.surface.Surface) -> None:
         angle = self.direction.angle_to(UP)
+        assert isinstance(self.sprite, pygame.Surface)
         rotated_surface = rotozoom(self.sprite, angle, 1.0)
         rotated_surface_size = Vector2(rotated_surface.get_size())
         blit_position = self.position - rotated_surface_size * 0.5
@@ -173,7 +173,12 @@ class Spaceship(GameObject):
 
 
 class Bullet(GameObject):
-    def __init__(self, position, velocity, graphical):
+    def __init__(
+        self,
+        position: Union[Tuple[int, int], Vector2],
+        velocity: Union[int, Vector2],
+        graphical: bool,
+    ):
         self.hit_barrier = False
         if graphical:
             super().__init__(position, load_sprite("bullet"), velocity)
@@ -181,24 +186,26 @@ class Bullet(GameObject):
             super().__init__(position, DummyBullet(), velocity)
         self.name = "bullet"
 
-    def move(self, surface):
+    def move(self, surface: Any) -> None:
         new_position = self.position + self.velocity
         for barrier in BARRIERS:
             if barrier.hit_barrier(self.position, new_position, self.radius):
                 if barrier.orientation == "vertical":
-                    self.set_position((barrier.center[0], new_position[1]))
+                    self.set_position((barrier.center[0], int(new_position[1])))
                     self.hit_barrier = True
                     return
                 elif barrier.orientation == "horizontal":
-                    self.set_position((new_position[0], barrier.center[1]))
+                    self.set_position((int(new_position[0]), barrier.center[1]))
                     self.hit_barrier = True
                     return
         self.set_position(new_position)
 
 
-class Barrier(GameObject):
+class Barrier:
     def __init__(self, orientation: Orientation, length: int, center: Tuple[int, int]):
         self.orientation = orientation
+        # Prevents mypy isssues with potentially unbound vars
+        assert orientation in {"vertical", "horizontal"}, "Invalid Orientation"
         self.length = length
         self.center = center
         self.name = "barrier"
@@ -206,43 +213,45 @@ class Barrier(GameObject):
         if orientation == "vertical":
             self.end1 = (self.center[0], self.center[1] - self.length // 2)
             self.end2 = (self.center[0], self.center[1] + self.length // 2)
-
-        elif orientation == "horizontal":
+        else:
             self.end1 = (self.center[0] - self.length // 2, self.center[1])
             self.end2 = (self.center[0] + self.length // 2, self.center[1])
 
-    def hit_barrier(self, pos: Tuple, new_pos, radius) -> bool:
+    def hit_barrier(
+        self,
+        pos: Union[Tuple[int, int], Vector2],
+        new_pos: Union[Tuple[int, int], Vector2],
+        radius: int,
+    ) -> bool:
         """There's probably a way to generalise this to diagonal barriers with linear algebra but
         cba.
 
         (wow this function is janky)
         """
-        x, y = pos
-        x_new, y_new = new_pos
+
+        # Vectors don't like normal tuple unpacking
+        x, y = pos[0], pos[1]
+        x_new, y_new = new_pos[0], new_pos[1]
         if self.orientation == "vertical":
             y_hit = min(y, y_new) > self.end1[1] - radius and max(y, y_new) < self.end2[1] + radius
             x_hit = (
                 min(x, x_new) - radius < self.center[0] and max(x, x_new) + radius > self.center[0]
             )
-        elif self.orientation == "horizontal":
+        else:
             x_hit = min(x, x_new) > self.end1[0] - radius and max(x, x_new) < self.end2[0] + radius
             y_hit = (
                 min(y, y_new) - radius < self.center[1] and max(y, y_new) + radius > self.center[1]
             )
 
-        if y_hit and x_hit:
-            return True
-        return False
+        return y_hit and x_hit
 
-    def draw(self, screen):
+    def draw(self, screen: pygame.surface.Surface) -> None:
         pygame.draw.line(screen, (255, 255, 255), self.end1, self.end2)
-        # pygame.display.flip()
 
-    def move(self, screen):
+    def move(self, screen: pygame.surface.Surface) -> None:
         pass
 
 
-# TODO: Move me
 BARRIER_LENGTH = int(GAME_SIZE[1] * 0.2)
 BARRIERS = [
     Barrier(

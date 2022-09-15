@@ -40,19 +40,21 @@ def play_shooter(
     Args:
         your_choose_move: function that chooses move (takes state as input)
         opponent_choose_move: function that picks your opponent's next move
-        verbose: whether to print board states to console. Useful for debugging
+        render: whether to render the game graphically
         game_speed_multiplier: multiplies the speed of the game. High == fast
                                (only has an effect when verbose=True)
 
     Returns: total_return, which is the sum of return from the game
     """
     total_return = 0.0
-    game = ShooterEnv(opponent_choose_move, render=render)
+    game = ShooterEnv(
+        opponent_choose_move, render=render, game_speed_multiplier=game_speed_multiplier
+    )
 
     state, _, done, _ = game.reset()
     while not done:
         action = your_choose_move(state)
-        state, reward, done, info = game.step(action)
+        state, reward, done, _ = game.step(action)
         total_return += reward
     return total_return
 
@@ -106,7 +108,7 @@ class ShooterEnv(gym.Env):
 
         self.reset()
         self.num_envs = 1
-        self.action_space = gym.spaces.Discrete(4)
+        self.action_space = gym.spaces.Discrete(4)  # type: ignore
 
         if self._render:
             self._draw()
@@ -146,9 +148,9 @@ class ShooterEnv(gym.Env):
     def _step(self, action: int, player: Spaceship) -> None:
         """Takes a single step for one player."""
 
-        assert (
-            isinstance(action, (int, np.int64)) and 0 <= action <= 3
-        ), "Action should be an integer 0-3"
+        assert isinstance(action, (int, np.int64)) and action in range(  # type: ignore
+            4
+        ), f"Action should be an integer 0-3. Got {action}"
         self._take_action(action, player)
 
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, Dict]:
@@ -163,11 +165,12 @@ class ShooterEnv(gym.Env):
         if winners is None or len(winners) > 1:  # Continuing game / Reservoir dogs ending
             reward = 0
         else:
+
             reward = 1 if winners[0] == self.player1 else -1
 
         if self._render:
             self._draw()
-            time.sleep(0.01 / self.game_speed_multiplier)
+            time.sleep(0.05 / self.game_speed_multiplier)
 
         return self.observation_player1, reward, self.done, {}
 
@@ -176,7 +179,7 @@ class ShooterEnv(gym.Env):
         return self.player1.NUM_BULLETS * 2
 
     @property
-    def n_observations(self):
+    def n_observations(self) -> int:
         return (2 + self.total_game_bullets) * 3
 
     @property
@@ -254,16 +257,20 @@ class ShooterEnv(gym.Env):
                     self._draw()
 
         for bullet in self.player1.bullets:
-            if not self.screen.get_rect().collidepoint(bullet.position) or bullet.hit_barrier:
+            if (
+                not self.screen.get_rect().collidepoint((bullet.position[0], bullet.position[1]))
+                or bullet.hit_barrier
+            ):
                 self.player1.bullets.remove(bullet)
 
         for bullet in self.player2.bullets:
-            if not self.screen.get_rect().collidepoint(bullet.position) or bullet.hit_barrier:
+            if (
+                not self.screen.get_rect().collidepoint(bullet.position[0], bullet.position[1])
+                or bullet.hit_barrier
+            ):
                 self.player2.bullets.remove(bullet)
 
-        if winners:
-            return winners
-        return None
+        return winners or None
 
     def _draw(self) -> None:
         assert not isinstance(self.screen, DummyScreen), "Don't call _draw() with a dummy screen"
@@ -291,7 +298,7 @@ class ShooterEnv(gym.Env):
         return game_objects
 
 
-def human_player(state) -> Any:
+def human_player(state: np.ndarray) -> Optional[int]:
     for event in pygame.event.get():
         if event.type == pygame.QUIT or (
             event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE
@@ -304,7 +311,4 @@ def human_player(state) -> Any:
         return 0
     elif is_key_pressed[pygame.K_LEFT]:
         return 1
-    if is_key_pressed[pygame.K_UP]:
-        return 2
-
-    return None
+    return 2 if is_key_pressed[pygame.K_UP] else None

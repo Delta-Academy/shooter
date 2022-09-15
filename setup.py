@@ -5,7 +5,7 @@ setup(
     version="0.1",
     packages=["delta_shooter"],
     include_package_data=True,
-    description="DESCRIPTION OF GAME",
-    author="AUTHOR",
-    author_email="AUTHOR-EMAIL",
+    description="1 v 1 shooter game with an OpenAI gym style interface",
+    author="neuromantic99",
+    author_email="james@learney.me",
 )
