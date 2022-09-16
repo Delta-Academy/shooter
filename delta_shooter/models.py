@@ -120,7 +120,10 @@ class Spaceship(GameObject):
             super().__init__(
                 starting_position, load_sprite(f"spaceship_player{player}"), Vector2(0)
             )
-            self.laser_sound = load_sound("laser")
+            try:
+                self.laser_sound = load_sound("laser")
+            except pygame.error:
+                self.laser_sound = DummySound()
         else:
             super().__init__(starting_position, DummyShip(), Vector2(0))
             self.laser_sound = DummySound()
@@ -224,10 +227,7 @@ class Barrier:
         radius: int,
     ) -> bool:
         """There's probably a way to generalise this to diagonal barriers with linear algebra but
-        cba.
-
-        (wow this function is janky)
-        """
+        cba."""
 
         # Vectors don't like normal tuple unpacking
         x, y = pos[0], pos[1]

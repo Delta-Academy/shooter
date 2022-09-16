@@ -14,7 +14,7 @@ from game_mechanics import (
     save_network,
 )
 
-TEAM_NAME = "Team Nameeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"  # <---- Enter your team name here!
+TEAM_NAME = "Team Namee"  # <---- Enter your team name here!
 assert TEAM_NAME != "Team Name", "Please change your TEAM_NAME!"
 
 
@@ -50,27 +50,26 @@ def choose_move(
 
 if __name__ == "__main__":
 
-    # ## Example workflow, feel free to edit this! ###
-    # my_network = train()
-    # save_network(my_network, TEAM_NAME)
+    ## Example workflow, feel free to edit this! ###
+    my_network = train()
+    save_network(my_network, TEAM_NAME)
 
-    # # Make sure this does not error! Or your
-    # # submission will not work in the tournament!
-    # check_submission(TEAM_NAME)
+    # Make sure this does not error! Or your
+    # submission will not work in the tournament!
+    check_submission(TEAM_NAME)
 
-    # my_network = load_network(TEAM_NAME)
+    my_network = load_network(TEAM_NAME)
 
-    # #  Code below plays a single game of pong against a basic robot player
-    # #  opponent, think about how you might want to adapt this to
-    # #  test the performance of your algorithm.
-    # def choose_move_no_network(state) -> int:
-    #     """The arguments in play_pong_game() require functions that only take the state as input.
+    #  Code below plays a single game of pong against a basic robot player
+    #  opponent, think about how you might want to adapt this to
+    #  test the performance of your algorithm.
+    def choose_move_no_network(state) -> int:
+        """The arguments in play_pong_game() require functions that only take the state as input.
 
-    #     This converts choose_move() to that format.
-    #     """
-    #     return choose_move(state, neural_network=my_network)
+        This converts choose_move() to that format.
+        """
+        return choose_move(state, neural_network=my_network)
 
-    choose_move_no_network = choose_move_randomly
     play_shooter(
         your_choose_move=choose_move_no_network,
         opponent_choose_move=human_player,

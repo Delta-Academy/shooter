@@ -1,7 +1,7 @@
 import random
 import time
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import gym
 import numpy as np
@@ -298,7 +298,7 @@ class ShooterEnv(gym.Env):
         return game_objects
 
 
-def human_player(state: np.ndarray) -> Optional[int]:
+def human_player(*arg, **kwargs) -> Optional[int]:
     for event in pygame.event.get():
         if event.type == pygame.QUIT or (
             event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE
