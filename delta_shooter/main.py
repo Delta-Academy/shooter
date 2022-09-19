@@ -14,7 +14,7 @@ from game_mechanics import (
     save_network,
 )
 
-TEAM_NAME = "Team Namee"  # <---- Enter your team name here!
+TEAM_NAME = "Team Name"  # <---- Enter your team name here!
 assert TEAM_NAME != "Team Name", "Please change your TEAM_NAME!"
 
 
