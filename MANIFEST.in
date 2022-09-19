@@ -1,0 +1,1 @@
+recursive-include delta_shooter/ *.png

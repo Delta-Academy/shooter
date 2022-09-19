@@ -2,3 +2,4 @@ numpy
 pygame
 tqdm
 delta-utils
+torch

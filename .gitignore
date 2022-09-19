@@ -1,3 +1,6 @@
+# cprofile files
+*.prof
+
 # IDE helpers
 .idea
 .vscode
@@ -14,6 +17,7 @@ rankings/
 team_store/
 *.pkl
 !*winner.pkl
+checkpoints/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
