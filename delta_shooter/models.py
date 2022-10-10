@@ -1,6 +1,6 @@
 import math
 from abc import ABC, abstractmethod
-from typing import Any, List, Literal, Tuple, Union
+from typing import Any, Dict, List, Literal, Tuple, Union
 
 import numpy as np
 import pygame
@@ -254,20 +254,22 @@ class Barrier:
         radius: int,
     ) -> bool:
         # Check points around the front half of the object for intersection
-        for idx in range(180, 360 + 180, Spaceship.ANGLE_TURN):
-            angle = float(idx % 360)  # math expects floats
-            angle = math.radians((angle))
-            x = pos[0] + radius * math.cos(angle)
-            y = pos[1] + radius * math.sin(angle)
-            x2 = new_pos[0] + radius * math.cos(angle)
-            y2 = new_pos[1] + radius * math.sin(angle)
-            if (
-                intersect(self.corner1, self.corner2, (x, y), (x2, y2))
-                or intersect(self.corner3, self.corner4, (x, y), (x2, y2))
-                or intersect(self.corner1, self.corner3, (x, y), (x2, y2))
-                or intersect(self.corner2, self.corner4, (x, y), (x2, y2))
-            ):
-                return True
+
+        # Check if the new_pos is inside the barrier
+        if (
+            new_pos[0] > self.corner1[0] - radius
+            and new_pos[0] < self.corner4[0] + radius
+            and new_pos[1] > self.corner1[1] - radius
+            and new_pos[1] < self.corner4[1] + radius
+        ):
+            return True
+
+        # Check if passing through the barrier
+        if intersect(self.corner1, self.corner2, pos, new_pos) or intersect(
+            self.corner3, self.corner4, pos, new_pos
+        ):
+            return True
+
         return False
 
     def draw(self, screen: pygame.surface.Surface) -> None:
