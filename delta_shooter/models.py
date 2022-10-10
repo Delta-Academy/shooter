@@ -1,12 +1,14 @@
+import math
 from abc import ABC, abstractmethod
 from typing import Any, List, Literal, Tuple, Union
 
+import numpy as np
 import pygame
 from pygame.math import Vector2
 from pygame.surface import Surface
 from pygame.transform import rotozoom
 
-from shooter_utils import edge_barriers, get_random_velocity, load_sound, load_sprite
+from shooter_utils import edge_barriers, get_random_velocity, intersecty, load_sound, load_sprite
 
 UP = Vector2(0, -1)
 DOWN = Vector2(0, 1)
@@ -15,6 +17,10 @@ LEFT = Vector2(-1, 0)
 
 
 GAME_SIZE = (600, 450)
+
+
+BLACK_COLOR = (0, 0, 0)
+WHITE_COLOR = (255, 255, 255)
 
 
 class DummyScreen:
@@ -99,6 +105,7 @@ class Spaceship(GameObject):
     ANGLE_TURN = 15
     ACCELERATION = 0.1
     BULLET_SPEED = 60
+    SHOOTING_JITTER = 2.5  # Add randomness to shot direction
     NUM_BULLETS = 2  # Limit the number on the screen at one time
 
     def __init__(
@@ -169,7 +176,11 @@ class Spaceship(GameObject):
         # Limit number of bullets
         if len(self.bullets) == self.NUM_BULLETS:
             return
-        bullet_velocity = self.direction * self.BULLET_SPEED + self.velocity
+        bullet_velocity = (
+            self.direction * self.BULLET_SPEED
+            + self.velocity
+            + Vector2(np.random.normal(0, self.SHOOTING_JITTER))
+        )
         bullet = Bullet(self.position, bullet_velocity, self.graphical)
         self.bullets.append(bullet)
         self.laser_sound.play()
@@ -204,7 +215,18 @@ class Bullet(GameObject):
         self.set_position(new_position)
 
 
+def ccw(A, B, C):
+    return (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0])
+
+
+def intersect(A, B, C, D) -> bool:
+    """Return true if line segments AB and CD intersect."""
+    return ccw(A, C, D) != ccw(B, C, D) and ccw(A, B, C) != ccw(A, B, D)
+
+
 class Barrier:
+    WIDTH = 6  # Width of barrier (needs to be even)
+
     def __init__(self, orientation: Orientation, length: int, center: Tuple[int, int]):
         self.orientation = orientation
         # Prevents mypy isssues with potentially unbound vars
@@ -214,11 +236,16 @@ class Barrier:
         self.name = "barrier"
 
         if orientation == "vertical":
-            self.end1 = (self.center[0], self.center[1] - self.length // 2)
-            self.end2 = (self.center[0], self.center[1] + self.length // 2)
+            self.corner1 = (self.center[0] - self.WIDTH // 2, self.center[1] - self.length // 2)
+            self.corner2 = (self.center[0] - self.WIDTH // 2, self.center[1] + self.length // 2)
+            self.corner3 = (self.center[0] + self.WIDTH // 2, self.center[1] - self.length // 2)
+            self.corner4 = (self.center[0] + self.WIDTH // 2, self.center[1] + self.length // 2)
+
         else:
-            self.end1 = (self.center[0] - self.length // 2, self.center[1])
-            self.end2 = (self.center[0] + self.length // 2, self.center[1])
+            self.corner1 = (self.center[0] - self.length // 2, self.center[1] - self.WIDTH // 2)
+            self.corner2 = (self.center[0] + self.length // 2, self.center[1] - self.WIDTH // 2)
+            self.corner3 = (self.center[0] - self.length // 2, self.center[1] + self.WIDTH // 2)
+            self.corner4 = (self.center[0] + self.length // 2, self.center[1] + self.WIDTH // 2)
 
     def hit_barrier(
         self,
@@ -226,27 +253,25 @@ class Barrier:
         new_pos: Union[Tuple[int, int], Vector2],
         radius: int,
     ) -> bool:
-        """There's probably a way to generalise this to diagonal barriers with linear algebra but
-        cba."""
-
-        # Vectors don't like normal tuple unpacking
-        x, y = pos[0], pos[1]
-        x_new, y_new = new_pos[0], new_pos[1]
-        if self.orientation == "vertical":
-            y_hit = min(y, y_new) > self.end1[1] - radius and max(y, y_new) < self.end2[1] + radius
-            x_hit = (
-                min(x, x_new) - radius < self.center[0] and max(x, x_new) + radius > self.center[0]
-            )
-        else:
-            x_hit = min(x, x_new) > self.end1[0] - radius and max(x, x_new) < self.end2[0] + radius
-            y_hit = (
-                min(y, y_new) - radius < self.center[1] and max(y, y_new) + radius > self.center[1]
-            )
-
-        return y_hit and x_hit
+        # Check points around the edfe of the object's circle
+        for idx in range(0, 360, 1):
+            angle = float(idx)  # math expects floats and mypy doesn't like recasting
+            angle = math.radians((angle))
+            x = pos[0] + radius * math.cos(angle)
+            y = pos[1] + radius * math.sin(angle)
+            x2 = new_pos[0] + radius * math.cos(angle)
+            y2 = new_pos[1] + radius * math.sin(angle)
+            if (
+                intersect(self.corner1, self.corner2, (x, y), (x2, y2))
+                or intersect(self.corner3, self.corner4, (x, y), (x2, y2))
+                or intersect(self.corner1, self.corner3, (x, y), (x2, y2))
+                or intersect(self.corner2, self.corner4, (x, y), (x2, y2))
+            ):
+                return True
+        return False
 
     def draw(self, screen: pygame.surface.Surface) -> None:
-        pygame.draw.line(screen, (255, 255, 255), self.end1, self.end2)
+        pygame.draw.line(screen, WHITE_COLOR, self.corner1, self.corner2, width=self.WIDTH)
 
     def move(self, screen: pygame.surface.Surface) -> None:
         pass

@@ -26,6 +26,9 @@ SPAWN_ORIENTATIONS = [RIGHT, LEFT, DOWN, UP]
 
 HERE = Path(__file__).parent.resolve()
 
+BLACK_COLOR = (0, 0, 0)
+WHITE_COLOR = (255, 255, 255)
+
 
 def play_shooter(
     your_choose_move: Callable[[np.ndarray], int],
@@ -47,14 +50,14 @@ def play_shooter(
     Returns: total_return, which is the sum of return from the game
     """
     total_return = 0.0
-    game = ShooterEnv(
+    env = ShooterEnv(
         opponent_choose_move, render=render, game_speed_multiplier=game_speed_multiplier
     )
 
-    state, _, done, _ = game.reset()
+    state, _, done, _ = env.reset()
     while not done:
         action = your_choose_move(state)
-        state, reward, done, _ = game.step(action)
+        state, reward, done, _ = env.step(action)
         total_return += reward
     return total_return
 
@@ -139,7 +142,7 @@ class ShooterEnv(gym.Env):
 
     def init_graphics(self) -> None:
         pygame.init()
-        pygame.display.set_caption("Space Rocks")
+        pygame.display.set_caption("Space Shooter")
         self.screen = pygame.display.set_mode(GAME_SIZE)
         self.background = load_sprite("space", False)
         self.clock = pygame.time.Clock()
@@ -275,6 +278,7 @@ class ShooterEnv(gym.Env):
     def _draw(self) -> None:
         assert not isinstance(self.screen, DummyScreen), "Don't call _draw() with a dummy screen"
         self.screen.blit(self.background, (0, 0))
+        self.screen.fill((BLACK_COLOR))
 
         for game_object in self._get_game_objects():
             game_object.draw(self.screen)
