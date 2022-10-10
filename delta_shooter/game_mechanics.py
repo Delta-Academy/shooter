@@ -4,15 +4,24 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
 import gym
+import gym.spaces
 import numpy as np
 import pygame
 import torch
 from torch import nn
 
-from models import BARRIERS, DOWN, LEFT, RIGHT, UP, DummyScreen, GameObject, Spaceship
+from models import (
+    DOWN,
+    GAME_SIZE,
+    LEFT,
+    RIGHT,
+    UP,
+    DummyScreen,
+    GameObject,
+    Spaceship,
+    get_barriers,
+)
 from shooter_utils import load_sprite, print_text
-
-GAME_SIZE = (600, 450)
 
 SPAWN_POINTS = [
     (int(GAME_SIZE[0] * 0.1), GAME_SIZE[1] // 2),
@@ -99,6 +108,7 @@ class ShooterEnv(gym.Env):
         opponent_choose_move: Callable,
         render: bool = False,
         game_speed_multiplier: float = 1,
+        include_barriers: bool = True,
     ):
 
         self._render = render
@@ -109,10 +119,12 @@ class ShooterEnv(gym.Env):
         else:
             self.screen = DummyScreen(GAME_SIZE)
 
-        self.reset()
         self.num_envs = 1
+        self.observation_space = gym.spaces.Box(low=0, high=1, shape=(18,))
         self.action_space = gym.spaces.Discrete(4)  # type: ignore
-
+        self.include_barriers = include_barriers
+        self.barriers = get_barriers() if include_barriers else []
+        self.reset()
         if self._render:
             self._draw()
 
@@ -129,16 +141,19 @@ class ShooterEnv(gym.Env):
             SPAWN_ORIENTATIONS[player1_idx],
             player=1,
             graphical=self._render,
+            include_barriers=self.include_barriers,
         )
         self.player2 = Spaceship(
             SPAWN_POINTS[player2_idx],
             SPAWN_ORIENTATIONS[player2_idx],
             player=2,
             graphical=self._render,
+            include_barriers=self.include_barriers,
         )
         self.done = False
         self.n_actions = 0
-        return self.observation_player1, 0.0, False, {}
+        # return self.observation_player1, 0.0, False, {}
+        return self.observation_player1
 
     def init_graphics(self) -> None:
         pygame.init()
@@ -243,7 +258,7 @@ class ShooterEnv(gym.Env):
             assert bullet.radius == 5
             if bullet.collides_with(self.player2):
                 self.done = True
-                self.message += "Player 1 wins!"
+                self.message = "Player 1 wins!"
                 self.player2.dead = True
                 if self._render:
                     self._draw()
@@ -298,7 +313,7 @@ class ShooterEnv(gym.Env):
         if not self.player2.dead:
             game_objects.extend([self.player2, *self.player2.bullets])
 
-        game_objects.extend(BARRIERS)
+        game_objects.extend(self.barriers)
         return game_objects
 
 

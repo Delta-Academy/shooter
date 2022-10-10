@@ -15,7 +15,9 @@ RIGHT = Vector2(1, 0)
 LEFT = Vector2(-1, 0)
 
 
-GAME_SIZE = (600, 450)
+# GAME_SIZE = (300, 225)
+# GAME_SIZE = (600, 450)
+GAME_SIZE = (500, 400)
 
 
 BLACK_COLOR = (0, 0, 0)
@@ -113,6 +115,7 @@ class Spaceship(GameObject):
         starting_orientation: Vector2,
         player: int,
         graphical: bool = True,
+        include_barriers: bool = True,
     ) -> None:
 
         self.starting_position = starting_position
@@ -135,6 +138,8 @@ class Spaceship(GameObject):
             self.laser_sound = DummySound()
 
         self.reset()
+        self.include_barriers = include_barriers
+        self.barriers = get_barriers() if self.include_barriers else []
 
     def reset(self) -> None:
         self.set_position(self.starting_position)
@@ -158,7 +163,7 @@ class Spaceship(GameObject):
     def move_forward(self) -> None:
         distance = self.radius
         new_position = self.position + self.direction * distance
-        for barrier in BARRIERS:
+        for barrier in self.barriers:
             if barrier.hit_barrier(self.position, new_position, self.radius):
                 return
         self.position = new_position
@@ -180,7 +185,7 @@ class Spaceship(GameObject):
             + self.velocity
             + Vector2(np.random.normal(0, self.SHOOTING_JITTER))
         )
-        bullet = Bullet(self.position, bullet_velocity, self.graphical)
+        bullet = Bullet(self.position, bullet_velocity, self.graphical, self.include_barriers)
         self.bullets.append(bullet)
         self.laser_sound.play()
 
@@ -191,6 +196,7 @@ class Bullet(GameObject):
         position: Union[Tuple[int, int], Vector2],
         velocity: Union[int, Vector2],
         graphical: bool,
+        include_barriers: bool = True,
     ):
         self.hit_barrier = False
         if graphical:
@@ -198,10 +204,11 @@ class Bullet(GameObject):
         else:
             super().__init__(position, DummyBullet(), velocity)
         self.name = "bullet"
+        self.barriers = get_barriers() if include_barriers else []
 
     def move(self, surface: Any) -> None:
         new_position = self.position + self.velocity
-        for barrier in BARRIERS:
+        for barrier in self.barriers:
             if barrier.hit_barrier(self.position, new_position, self.radius):
                 if barrier.orientation == "vertical":
                     self.set_position((barrier.center[0], int(new_position[1])))
@@ -264,12 +271,10 @@ class Barrier:
             return True
 
         # Check if passing through the barrier
-        if intersect(self.corner1, self.corner2, pos, new_pos) or intersect(
-            self.corner3, self.corner4, pos, new_pos
-        ):
-            return True
-
-        return False
+        return bool(
+            intersect(self.corner1, self.corner2, pos, new_pos)
+            or intersect(self.corner3, self.corner4, pos, new_pos)
+        )
 
     def draw(self, screen: pygame.surface.Surface) -> None:
         pygame.draw.line(screen, WHITE_COLOR, self.corner1, self.corner2, width=self.WIDTH)
@@ -278,26 +283,28 @@ class Barrier:
         pass
 
 
-BARRIER_LENGTH = int(GAME_SIZE[1] * 0.2)
-BARRIERS = [
-    Barrier(
-        orientation="vertical",
-        center=(int(GAME_SIZE[0] * 0.2), int(GAME_SIZE[1] * 0.5)),
-        length=BARRIER_LENGTH,
-    ),
-    Barrier(
-        orientation="vertical",
-        center=(int(GAME_SIZE[0] * 0.8), int(GAME_SIZE[1] * 0.5)),
-        length=BARRIER_LENGTH,
-    ),
-    Barrier(
-        orientation="horizontal",
-        center=(int(GAME_SIZE[0] * 0.5), int(GAME_SIZE[1] * 0.2)),
-        length=BARRIER_LENGTH,
-    ),
-    Barrier(
-        orientation="horizontal",
-        center=(int(GAME_SIZE[0] * 0.5), int(GAME_SIZE[1] * 0.8)),
-        length=BARRIER_LENGTH,
-    ),
-]
+def get_barriers() -> List[Barrier]:
+
+    barrier_length = int(GAME_SIZE[1] * 0.2)
+    return [
+        Barrier(
+            orientation="vertical",
+            center=(int(GAME_SIZE[0] * 0.2), int(GAME_SIZE[1] * 0.5)),
+            length=barrier_length,
+        ),
+        Barrier(
+            orientation="vertical",
+            center=(int(GAME_SIZE[0] * 0.8), int(GAME_SIZE[1] * 0.5)),
+            length=barrier_length,
+        ),
+        Barrier(
+            orientation="horizontal",
+            center=(int(GAME_SIZE[0] * 0.5), int(GAME_SIZE[1] * 0.2)),
+            length=barrier_length,
+        ),
+        Barrier(
+            orientation="horizontal",
+            center=(int(GAME_SIZE[0] * 0.5), int(GAME_SIZE[1] * 0.8)),
+            length=barrier_length,
+        ),
+    ]
