@@ -1,6 +1,5 @@
-import math
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Literal, Tuple, Union
+from typing import Any, List, Literal, Tuple, Union
 
 import numpy as np
 import pygame
