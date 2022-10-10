@@ -8,7 +8,7 @@ from pygame.math import Vector2
 from pygame.surface import Surface
 from pygame.transform import rotozoom
 
-from shooter_utils import edge_barriers, get_random_velocity, intersecty, load_sound, load_sprite
+from shooter_utils import edge_barriers, load_sound, load_sprite
 
 UP = Vector2(0, -1)
 DOWN = Vector2(0, 1)
@@ -253,9 +253,9 @@ class Barrier:
         new_pos: Union[Tuple[int, int], Vector2],
         radius: int,
     ) -> bool:
-        # Check points around the edfe of the object's circle
-        for idx in range(0, 360, 1):
-            angle = float(idx)  # math expects floats and mypy doesn't like recasting
+        # Check points around the front half of the object for intersection
+        for idx in range(180, 360 + 180, Spaceship.ANGLE_TURN):
+            angle = float(idx % 360)  # math expects floats
             angle = math.radians((angle))
             x = pos[0] + radius * math.cos(angle)
             y = pos[1] + radius * math.sin(angle)
