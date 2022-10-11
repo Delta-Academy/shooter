@@ -23,6 +23,9 @@ GAME_SIZE = (500, 400)
 BLACK_COLOR = (0, 0, 0)
 WHITE_COLOR = (255, 255, 255)
 
+# Types of coordinates used throughout
+Coord = Union[Vector2, Tuple[int, int]]
+
 
 class DummyScreen:
     def __init__(self, size: Tuple[int, int]):
@@ -63,7 +66,7 @@ Orientation = Literal["horizontal", "vertical"]
 class GameObject:
     def __init__(
         self,
-        starting_position: Union[Tuple[int, int], Vector2],
+        starting_position: Coord,
         sprite: Union[Surface, DummySprite],
         velocity: Union[int, Vector2],
     ) -> None:
@@ -73,7 +76,7 @@ class GameObject:
         self.velocity = Vector2(velocity)
         self.face_up()
 
-    def set_position(self, position: Union[Tuple[int, int], Vector2]) -> None:
+    def set_position(self, position: Coord) -> None:
         self.position = Vector2(position)
 
     def set_orientation(self, orientation: Vector2) -> None:
@@ -193,7 +196,7 @@ class Spaceship(GameObject):
 class Bullet(GameObject):
     def __init__(
         self,
-        position: Union[Tuple[int, int], Vector2],
+        position: Coord,
         velocity: Union[int, Vector2],
         graphical: bool,
         include_barriers: bool = True,
@@ -214,9 +217,6 @@ class Bullet(GameObject):
                 self.hit_barrier = True
                 return
         self.set_position(new_position)
-
-
-Coord = Union[Vector2, Tuple[int, int]]
 
 
 def ccw(A: Coord, B: Coord, C: Coord) -> bool:
@@ -254,8 +254,8 @@ class Barrier:
 
     def hit_barrier(
         self,
-        pos: Union[Tuple[int, int], Vector2],
-        new_pos: Union[Tuple[int, int], Vector2],
+        pos: Coord,
+        new_pos: Coord,
         radius: int,
     ) -> bool:
         # Check points around the front half of the object for intersection

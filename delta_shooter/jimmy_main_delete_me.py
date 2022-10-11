@@ -83,11 +83,12 @@ def train() -> nn.Module:
 
 def test_graphics():
 
-    model = PPO.load("/Users/jamesrowland/Code/shooter/Meaty_model2.zip")
+    model = PPO.load("/Users/jamesrowland/Code/shooter/checkpoints/Meaty_model3.zip")
+    old_model = PPO.load("/Users/jamesrowland/Code/shooter/checkpoints/Meaty_model2.zip")
     done = False
 
     def model_predict_wrapper(state: np.ndarray) -> int:
-        return model.predict(state, deterministic=True)[0]
+        return model.predict(state, deterministic=False)[0]
 
     n_games = 3
     env = ShooterEnv(
@@ -100,8 +101,8 @@ def test_graphics():
         # obs, _, done, _ = env.reset()
         obs = env.reset()
         while not done:
-            # action, _ = model.predict(obs, deterministic=True)
-            action = human_player(obs)
+            action, _ = old_model.predict(obs, deterministic=False)
+            # action = human_player(obs)
             # action = choose_move_randomly(obs)
             obs, reward, done, info = env.step(action)
             time.sleep(0.1)
@@ -202,7 +203,7 @@ if __name__ == "__main__":
     #     game_speed_multiplier=1,
     #     render=True,
     # )
-    train()
-    # test_graphics()
+    # train()
+    test_graphics()
     # n_games()
     # cProfile.run("n_games()", "profile.prof")
