@@ -1,3 +1,4 @@
+import copy
 import cProfile
 import time
 from typing import Any, Dict
@@ -30,22 +31,32 @@ assert TEAM_NAME != "Team Name", "Please change your TEAM_NAME!"
 INCLUDE_BARRIERS = True
 
 
+class ChooseMoveCheckpoint:
+    def __init__(self, model):
+        self.model = copy.deepcopy(model)
+
+    def choose_move(self, state):
+        action, _ = self.model.predict(state, deterministic=False)
+        return action
+
+
 def train() -> nn.Module:
-    #
+
     ####### train ##########
+    model = PPO.load("/Users/jamesrowland/Code/shooter/checkpoints/Meaty_model2")
 
-    # def model_predict_wrapper(obs):
-    #     return model.predict(obs, deterministic=False)[0]
+    opponent_choose_move = ChooseMoveCheckpoint(model).choose_move
 
-    env = ShooterEnv(choose_move_randomly, render=False, include_barriers=INCLUDE_BARRIERS)
-
-    # model = PPO("MlpPolicy", env, verbose=2)
-
-    model = PPO.load("/Users/jamesrowland/Code/shooter/Meaty_model.zip")
+    env = ShooterEnv(opponent_choose_move, render=False, include_barriers=INCLUDE_BARRIERS)
     model.set_env(env)
 
-    model.learn(total_timesteps=2_000_000)
-    model.save(f"Meaty_model")
+    # model = PPO("MlpPolicy", env, verbose=2, ent_coef=0.05)
+
+    # model = PPO.load("/Users/jamesrowland/Code/shooter/Meaty_model.zip")
+    # model.set_env(env)
+
+    model.learn(total_timesteps=1_000_000)
+    model.save("/Users/jamesrowland/Code/shooter/checkpoints/Meaty_model3.zip")
 
     ####### test ##########
     test_env = ShooterEnv(choose_move_randomly, render=False, include_barriers=INCLUDE_BARRIERS)
@@ -71,21 +82,26 @@ def train() -> nn.Module:
 
 
 def test_graphics():
-    def model_predict_wrapper(obs):
-        return model.predict(obs, deterministic=True)[0]
 
-    model = PPO.load("/Users/jamesrowland/Code/shooter/Meaty_model.zip")
+    model = PPO.load("/Users/jamesrowland/Code/shooter/Meaty_model2.zip")
     done = False
+
+    def model_predict_wrapper(state: np.ndarray) -> int:
+        return model.predict(state, deterministic=True)[0]
 
     n_games = 3
     env = ShooterEnv(
-        human_player, render=True, game_speed_multiplier=100, include_barriers=INCLUDE_BARRIERS
+        model_predict_wrapper,
+        render=True,
+        game_speed_multiplier=100,
+        include_barriers=INCLUDE_BARRIERS,
     )
     for game in range(n_games):
         # obs, _, done, _ = env.reset()
         obs = env.reset()
         while not done:
-            action, _ = model.predict(obs, deterministic=True)
+            # action, _ = model.predict(obs, deterministic=True)
+            action = human_player(obs)
             # action = choose_move_randomly(obs)
             obs, reward, done, info = env.step(action)
             time.sleep(0.1)
@@ -186,7 +202,7 @@ if __name__ == "__main__":
     #     game_speed_multiplier=1,
     #     render=True,
     # )
-    # train()
-    test_graphics()
+    train()
+    # test_graphics()
     # n_games()
     # cProfile.run("n_games()", "profile.prof")

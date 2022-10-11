@@ -210,22 +210,21 @@ class Bullet(GameObject):
         new_position = self.position + self.velocity
         for barrier in self.barriers:
             if barrier.hit_barrier(self.position, new_position, self.radius):
-                if barrier.orientation == "vertical":
-                    self.set_position((barrier.center[0], int(new_position[1])))
-                    self.hit_barrier = True
-                    return
-                elif barrier.orientation == "horizontal":
-                    self.set_position((int(new_position[0]), barrier.center[1]))
-                    self.hit_barrier = True
-                    return
+                self.set_position((-100, -100))
+                self.hit_barrier = True
+                return
         self.set_position(new_position)
 
 
-def ccw(A, B, C):
+Coord = Union[Vector2, Tuple[int, int]]
+
+
+def ccw(A: Coord, B: Coord, C: Coord) -> bool:
+    """Check if points are in a counter-clockwise order."""
     return (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0])
 
 
-def intersect(A, B, C, D) -> bool:
+def intersect(A: Coord, B: Coord, C: Coord, D: Coord) -> bool:
     """Return true if line segments AB and CD intersect."""
     return ccw(A, C, D) != ccw(B, C, D) and ccw(A, B, C) != ccw(A, B, D)
 
@@ -285,7 +284,7 @@ class Barrier:
 
 def get_barriers() -> List[Barrier]:
 
-    barrier_length = int(GAME_SIZE[1] * 0.2)
+    barrier_length = int(GAME_SIZE[1] * 0.3)
     return [
         Barrier(
             orientation="vertical",

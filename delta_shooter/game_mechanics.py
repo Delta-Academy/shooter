@@ -120,7 +120,7 @@ class ShooterEnv(gym.Env):
             self.screen = DummyScreen(GAME_SIZE)
 
         self.num_envs = 1
-        self.observation_space = gym.spaces.Box(low=0, high=1, shape=(18,))
+        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(18,))
         self.action_space = gym.spaces.Discrete(4)  # type: ignore
         self.include_barriers = include_barriers
         self.barriers = get_barriers() if include_barriers else []
@@ -172,7 +172,8 @@ class ShooterEnv(gym.Env):
         self._take_action(action, player)
 
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, Dict]:
-        self._step(action, self.player1)
+        if action is not None:
+            self._step(action, self.player1)
 
         opponent_move = self.opponent_choose_move(state=self.observation_player2)
         if opponent_move is not None:
@@ -209,13 +210,18 @@ class ShooterEnv(gym.Env):
         ):
             observation_player1[idx * 3 : (idx + 1) * 3] = np.array(
                 [
-                    object.position[0] / GAME_SIZE[0],  # Divide by the max value
-                    object.position[1] / GAME_SIZE[1],
-                    object.angle % 360 / 360,
+                    self.normalise(object.position[0], GAME_SIZE[0]),
+                    self.normalise(object.position[1], GAME_SIZE[1]),
+                    self.normalise(object.angle % 360, 360),
                 ]
             )
 
         return observation_player1
+
+    @staticmethod
+    def normalise(x: float, max_x: float) -> float:
+        """Normalise x to be between -1 and 1."""
+        return 2 * (x / max_x) - 1
 
     @property
     def observation_player2(self) -> np.ndarray:
@@ -226,9 +232,9 @@ class ShooterEnv(gym.Env):
         ):
             observation_player2[idx * 3 : (idx + 1) * 3] = np.array(
                 [
-                    object.position[0] / GAME_SIZE[0],  # Divide by the max value
-                    object.position[1] / GAME_SIZE[1],
-                    object.angle % 360 / 360,
+                    self.normalise(object.position[0], GAME_SIZE[0]),
+                    self.normalise(object.position[1], GAME_SIZE[1]),
+                    self.normalise(object.angle % 360, 360),
                 ]
             )
 
