@@ -15,13 +15,12 @@ RIGHT = Vector2(1, 0)
 LEFT = Vector2(-1, 0)
 
 
-# GAME_SIZE = (300, 225)
-# GAME_SIZE = (600, 450)
-GAME_SIZE = (500, 400)
+GAME_SIZE = (600, 450)
 
 
 BLACK_COLOR = (0, 0, 0)
 WHITE_COLOR = (255, 255, 255)
+NEON_GREEN = (57, 255, 20)
 
 # Types of coordinates used throughout
 Coord = Union[Vector2, Tuple[int, int]]
@@ -229,7 +228,6 @@ class Bullet(GameObject):
         new_position = self.position + self.velocity
         for barrier in self.barriers:
             if barrier.hit_barrier(self.position, new_position, self.radius):
-                self.set_position((-100, -100))
                 self.hit_barrier = True
                 return
         self.set_position(new_position)
@@ -246,7 +244,7 @@ def intersect(A: Coord, B: Coord, C: Coord, D: Coord) -> bool:
 
 
 class Barrier:
-    WIDTH = 6  # Width of barrier (needs to be even)
+    WIDTH = 22  # Width of barrier (needs to be even)
 
     def __init__(self, orientation: Orientation, length: int, center: Tuple[int, int]):
         self.orientation = orientation
@@ -292,7 +290,7 @@ class Barrier:
         )
 
     def draw(self, screen: pygame.surface.Surface) -> None:
-        pygame.draw.line(screen, WHITE_COLOR, self.corner1, self.corner2, width=self.WIDTH)
+        pygame.draw.line(screen, NEON_GREEN, self.corner1, self.corner2, width=self.WIDTH)
 
     def move(self, screen: pygame.surface.Surface) -> None:
         pass

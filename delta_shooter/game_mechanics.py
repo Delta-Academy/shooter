@@ -137,14 +137,14 @@ class ShooterEnv(gym.Env):
 
         self.player1 = Spaceship(
             SPAWN_POINTS[player1_idx],
-            SPAWN_ORIENTATIONS[player1_idx],
+            random.choice(SPAWN_ORIENTATIONS),
             player=1,
             graphical=self._render,
             include_barriers=self.include_barriers,
         )
         self.player2 = Spaceship(
             SPAWN_POINTS[player2_idx],
-            SPAWN_ORIENTATIONS[player2_idx],
+            random.choice(SPAWN_ORIENTATIONS),
             player=2,
             graphical=self._render,
             include_barriers=self.include_barriers,
@@ -300,8 +300,6 @@ class ShooterEnv(gym.Env):
     def _draw(self) -> None:
         assert not isinstance(self.screen, DummyScreen), "Don't call _draw() with a dummy screen"
         self.screen.blit(self.background, (0, 0))
-        self.screen.fill((BLACK_COLOR))
-
         for game_object in self._get_game_objects():
             game_object.draw(self.screen)
 
