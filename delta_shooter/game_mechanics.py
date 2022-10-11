@@ -99,7 +99,7 @@ def save_network(network: nn.Module, team_name: str) -> None:
 
 
 def choose_move_randomly(state: np.ndarray) -> int:
-    return np.random.randint(4)
+    return np.random.randint(6)
 
 
 class ShooterEnv(gym.Env):
@@ -121,7 +121,7 @@ class ShooterEnv(gym.Env):
 
         self.num_envs = 1
         self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(18,))
-        self.action_space = gym.spaces.Discrete(4)  # type: ignore
+        self.action_space = gym.spaces.Discrete(6)  # type: ignore
         self.include_barriers = include_barriers
         self.barriers = get_barriers() if include_barriers else []
         self.reset()
@@ -130,11 +130,10 @@ class ShooterEnv(gym.Env):
 
     def reset(self) -> Tuple[np.ndarray, float, bool, Dict]:
         self.message = ""
-        spawn_idx = list(range(len(SPAWN_POINTS)))
-        random.shuffle(spawn_idx)
 
-        player1_idx = spawn_idx.pop()
-        player2_idx = spawn_idx.pop()
+        opposite_spawn = {0: 1, 1: 0, 2: 3, 3: 2}
+        player1_idx = random.choice(range(4))
+        player2_idx = opposite_spawn[player1_idx]
 
         self.player1 = Spaceship(
             SPAWN_POINTS[player1_idx],
@@ -167,7 +166,7 @@ class ShooterEnv(gym.Env):
         """Takes a single step for one player."""
 
         assert isinstance(action, (int, np.int64)) and action in range(  # type: ignore
-            4
+            6
         ), f"Action should be an integer 0-3. Got {action}"
         self._take_action(action, player)
 
@@ -251,6 +250,10 @@ class ShooterEnv(gym.Env):
             player.move_forward()
         elif action == 3:
             player.shoot()
+        elif action == 4:
+            player.strafe_left()
+        elif action == 5:
+            player.strafe_right()
 
     def _process_game_logic(self) -> Optional[List[Spaceship]]:
         for game_object in self._get_game_objects():
@@ -260,8 +263,20 @@ class ShooterEnv(gym.Env):
         winners = []
 
         for bullet in self.player1.bullets:
-            # Remove
-            assert bullet.radius == 5
+            if (
+                not self.screen.get_rect().collidepoint((bullet.position[0], bullet.position[1]))
+                or bullet.hit_barrier
+            ):
+                self.player1.bullets.remove(bullet)
+
+        for bullet in self.player2.bullets:
+            if (
+                not self.screen.get_rect().collidepoint(bullet.position[0], bullet.position[1])
+                or bullet.hit_barrier
+            ):
+                self.player2.bullets.remove(bullet)
+
+        for bullet in self.player1.bullets:
             if bullet.collides_with(self.player2):
                 self.done = True
                 self.message = "Player 1 wins!"
@@ -279,20 +294,6 @@ class ShooterEnv(gym.Env):
                 self.player1.dead = True
                 if self._render:
                     self._draw()
-
-        for bullet in self.player1.bullets:
-            if (
-                not self.screen.get_rect().collidepoint((bullet.position[0], bullet.position[1]))
-                or bullet.hit_barrier
-            ):
-                self.player1.bullets.remove(bullet)
-
-        for bullet in self.player2.bullets:
-            if (
-                not self.screen.get_rect().collidepoint(bullet.position[0], bullet.position[1])
-                or bullet.hit_barrier
-            ):
-                self.player2.bullets.remove(bullet)
 
         return winners or None
 
@@ -336,4 +337,8 @@ def human_player(*arg, **kwargs) -> Optional[int]:
         return 0
     elif is_key_pressed[pygame.K_LEFT]:
         return 1
+    elif is_key_pressed[pygame.K_a]:
+        return 4
+    elif is_key_pressed[pygame.K_d]:
+        return 5
     return 2 if is_key_pressed[pygame.K_UP] else None

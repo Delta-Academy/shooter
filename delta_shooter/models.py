@@ -171,6 +171,22 @@ class Spaceship(GameObject):
                 return
         self.position = new_position
 
+    def strafe_left(self) -> None:
+        distance = self.radius
+        new_position = self.position + (self.direction.rotate(-90) * distance)
+        for barrier in self.barriers:
+            if barrier.hit_barrier(self.position, new_position, self.radius):
+                return
+        self.position = new_position
+
+    def strafe_right(self) -> None:
+        distance = self.radius
+        new_position = self.position + (self.direction.rotate(90) * distance)
+        for barrier in self.barriers:
+            if barrier.hit_barrier(self.position, new_position, self.radius):
+                return
+        self.position = new_position
+
     def draw(self, surface: pygame.surface.Surface) -> None:
         angle = self.direction.angle_to(UP)
         assert isinstance(self.sprite, pygame.Surface)
@@ -284,7 +300,7 @@ class Barrier:
 
 def get_barriers() -> List[Barrier]:
 
-    barrier_length = int(GAME_SIZE[1] * 0.3)
+    barrier_length = int(GAME_SIZE[1] * 0.4)
     return [
         Barrier(
             orientation="vertical",

@@ -43,20 +43,25 @@ class ChooseMoveCheckpoint:
 def train() -> nn.Module:
 
     ####### train ##########
-    model = PPO.load("/Users/jamesrowland/Code/shooter/checkpoints/Meaty_model2")
+    # model = PPO.load("/Users/jamesrowland/Code/shooter/checkpoints/Meaty_model2")
 
-    opponent_choose_move = ChooseMoveCheckpoint(model).choose_move
-
-    env = ShooterEnv(opponent_choose_move, render=False, include_barriers=INCLUDE_BARRIERS)
-    model.set_env(env)
+    # env = ShooterEnv(opponent_choose_move, render=False, include_barriers=INCLUDE_BARRIERS)
+    # env = ShooterEnv(choose_move_randomly, render=False, include_barriers=INCLUDE_BARRIERS)
+    # model = PPO("MlpPolicy", env, verbose=2, ent_coef=0.05)
 
     # model = PPO("MlpPolicy", env, verbose=2, ent_coef=0.05)
 
-    # model = PPO.load("/Users/jamesrowland/Code/shooter/Meaty_model.zip")
-    # model.set_env(env)
+    n = 4
+    model = PPO.load(f"/Users/jamesrowland/Code/shooter/checkpoints/Meaty_model{n}.zip")
 
-    model.learn(total_timesteps=1_000_000)
-    model.save("/Users/jamesrowland/Code/shooter/checkpoints/Meaty_model3.zip")
+    opponent_choose_move = ChooseMoveCheckpoint(model).choose_move
+    # opponent_choose_move = ChooseMoveCheckpoint(model).choose_move
+    env = ShooterEnv(opponent_choose_move, render=False, include_barriers=INCLUDE_BARRIERS)
+
+    model.set_env(env)
+
+    model.learn(total_timesteps=300_000)
+    model.save(f"/Users/jamesrowland/Code/shooter/checkpoints/Meaty_model{n+1}.zip")
 
     ####### test ##########
     test_env = ShooterEnv(choose_move_randomly, render=False, include_barriers=INCLUDE_BARRIERS)
@@ -68,7 +73,7 @@ def train() -> nn.Module:
         obs = test_env.reset()
         done = False
         while not done:
-            action, _states = model.predict(obs, deterministic=True)
+            action, _states = model.predict(obs, deterministic=False)
             obs, reward, done, info = test_env.step(action)
 
         print(reward)
@@ -83,14 +88,14 @@ def train() -> nn.Module:
 
 def test_graphics():
 
-    model = PPO.load("/Users/jamesrowland/Code/shooter/checkpoints/Meaty_model3.zip")
+    model = PPO.load("/Users/jamesrowland/Code/shooter/checkpoints/Meaty_model4.zip")
     old_model = PPO.load("/Users/jamesrowland/Code/shooter/checkpoints/Meaty_model2.zip")
-    done = False
 
     def model_predict_wrapper(state: np.ndarray) -> int:
+
         return model.predict(state, deterministic=False)[0]
 
-    n_games = 3
+    n_games = 10
     env = ShooterEnv(
         model_predict_wrapper,
         render=True,
@@ -100,9 +105,12 @@ def test_graphics():
     for game in range(n_games):
         # obs, _, done, _ = env.reset()
         obs = env.reset()
+        done = False
+        time.sleep(100)
         while not done:
-            action, _ = old_model.predict(obs, deterministic=False)
+            # action, _ = model.predict(obs, deterministic=False)
             # action = human_player(obs)
+            action = choose_move_randomly(obs)
             # action = choose_move_randomly(obs)
             obs, reward, done, info = env.step(action)
             time.sleep(0.1)
@@ -141,24 +149,28 @@ def choose_move(state: Any, neural_network: nn.Module) -> int:
 
 
 def n_games() -> None:
-    n = 50
+    n = 250
     n_actions = []
     rewards = []
     steps_count = []
+    model = PPO.load("/Users/jamesrowland/Code/shooter/checkpoints/Meaty_model4.zip")
     for _ in tqdm(range(n)):
         n_steps = 0
         game = ShooterEnv(choose_move_randomly, render=False)
 
-        state, reward, done, info = game.reset()
+        obs = game.reset()
+        # state, reward, done, info = game.reset()
+        done = False
         while not done:
             n_steps += 1
-            action = choose_move_randomly(state)
-            state, reward, done, info = game.step(action)
+            # action = choose_move_randomly(state)
+            action, _ = model.predict(obs, deterministic=False)
+            obs, reward, done, info = game.step(action)
 
         rewards.append(reward)
         n_actions.append(game.n_actions)
         steps_count.append(n_steps)
-    assert np.mean(n_actions) > 250, "Maybe too few actions, check"
+    # assert np.mean(n_actions) > 250, "Maybe too few actions, check"
     print(f"Average reward = {np.mean(rewards)}")
     print(f"Average n steps = {np.mean(steps_count)}")
 
