@@ -43,14 +43,14 @@ def choose_move(
 
     Returns:
         move (int): The move you want to given the state of the game.
-                    Should be in {0,1,2,3}.
+                    Should be in {0,1,2,3,4,5}.
     """
     raise NotImplementedError("You need to implement this function!")
 
 
 if __name__ == "__main__":
 
-    ## Example workflow, feel free to edit this! ###
+    # Example workflow, feel free to edit this! ###
     my_network = train()
     save_network(my_network, TEAM_NAME)
 
@@ -60,9 +60,6 @@ if __name__ == "__main__":
 
     my_network = load_network(TEAM_NAME)
 
-    #  Code below plays a single game of pong against a basic robot player
-    #  opponent, think about how you might want to adapt this to
-    #  test the performance of your algorithm.
     def choose_move_no_network(state) -> int:
         """The arguments in play_pong_game() require functions that only take the state as input.
 
@@ -70,9 +67,14 @@ if __name__ == "__main__":
         """
         return choose_move(state, neural_network=my_network)
 
+    choose_move_no_network = choose_move_randomly
+
+    # The code below plays a single game against your bot.
+    # You play as the pink ship
     play_shooter(
-        your_choose_move=choose_move_no_network,
-        opponent_choose_move=human_player,
+        your_choose_move=human_player,
+        opponent_choose_move=choose_move_no_network,
         game_speed_multiplier=1,
         render=True,
+        include_barriers=True,
     )

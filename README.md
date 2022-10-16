@@ -137,7 +137,7 @@ The opponent's <code style="white-space:nowrap;">choose_move</code> function is 
 <br />
 <br />
 
-The env's <code style="white-space:nowrap;">render</code> argument can be used to visualise the game. This is required for <code style="white-space:nowrap">human_player()</code> to work.
+The env's <code style="white-space:nowrap;">render</code> argument can be used to visualise the game. This is required for <code style="white-space:nowrap">human_player()</code> to work. Player1 is the pink ship, the opponent is the red ship.
 
 The env also has a <code style="white-space:nowrap;">include_barriers</code> argument which toggles the laser_walls on and off. In the tournament the walls will be on, but you can turn them off to make initial training easier.
 

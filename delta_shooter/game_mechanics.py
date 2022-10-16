@@ -44,6 +44,7 @@ def play_shooter(
     opponent_choose_move: Callable[[np.ndarray], int],
     game_speed_multiplier: float = 1,
     render: bool = False,
+    include_barriers: bool = True,
 ) -> float:
     """Play a game where moves are chosen by `your_choose_move()` and `opponent_choose_move()`.
 
@@ -60,7 +61,10 @@ def play_shooter(
     """
     total_return = 0.0
     env = ShooterEnv(
-        opponent_choose_move, render=render, game_speed_multiplier=game_speed_multiplier
+        opponent_choose_move,
+        render=render,
+        game_speed_multiplier=game_speed_multiplier,
+        include_barriers=include_barriers,
     )
 
     state, _, done, _ = env.reset()
