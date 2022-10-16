@@ -67,8 +67,6 @@ if __name__ == "__main__":
         """
         return choose_move(state, neural_network=my_network)
 
-    choose_move_no_network = choose_move_randomly
-
     # The code below plays a single game against your bot.
     # You play as the pink ship
     play_shooter(
