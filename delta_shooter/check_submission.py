@@ -8,11 +8,11 @@ from game_mechanics import ShooterEnv, load_network
 
 def check_submission(team_name: str) -> None:
 
-    example_state = ShooterEnv(lambda x: x, render=False).reset()
+    example_state, _, _, _ = ShooterEnv(lambda x: x, render=False).reset()
 
     expected_choose_move_return_type = int
     game_mechanics_expected_hash = (
-        "08c245cda934111fd2dea916c86440e0e608108f060b1b4b5f78d9914c379ffc"
+        "2925cc219430589b7b976fbc298cbe7f3819ed21ed5055410528606f8cef2400"
     )
     expected_pkl_output_type = nn.Module
     pkl_file = load_network(team_name)

@@ -155,8 +155,7 @@ class ShooterEnv(gym.Env):
         )
         self.done = False
         self.n_actions = 0
-        # return self.observation_player1, 0.0, False, {}
-        return self.observation_player1
+        return self.observation_player1, 0.0, False, {}
 
     def init_graphics(self) -> None:
         pygame.init()

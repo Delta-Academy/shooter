@@ -1,6 +1,6 @@
 ## RL to play Space Shooter :gun::rocket:
 
-You control a space ship. A rival space-mob has entered your gangs patch.
+You control a spaceship. A rival space-mob has entered your gangs patch.
 
 You challenge their top marksman to a laser wall shootout.
 
@@ -12,41 +12,44 @@ You must terminate your opponent. And you must terminate them using RL.
 
 Space shooter is a **two-player** top down shooter game. Players take turns synchronously.
 
-The arena is a 2d grid with **4 laser walls**.
+The arena is a 2D grid with **4 laser walls**.
 
 The game starts with the **two players** positioned behind random opposite walls in the arena.
 
-The **goal** :goal_net: is to shoot your opponent :gun: before they shoot you. The laser walls protect ships from enemy bullets.
-
-Each player has the option of 6 actions on each step:
-
-- rotate clockwise,
-- rotate anti-clockwise,
-- move forward (in the direction you're facing),
-- strafe left (relative to the ship),
-- strafe right
-- shoot.
+Each player can turn, move and shoot. The **goal** :goal_net: is to shoot your opponent :gun: before they shoot you.
 
 At any time, only **two bullets** from a given player can be present in the arena. If the player shoots twice in quick succession, the player must wait until the bullet goes off the **edge of the arena** or strikes a **laser wall** before they can shoot again.
 
-These **laser walls** prevent both players and bullets travelling through them.
+The **laser walls** prevent players and bullets travelling through them.
 
-You ship is not able to leave the arena, and you'd never do that to your space-gang pals anyway!
+You ship is not able to leave the arena, but you'd never do that to your space-gang pals anyway!
 
 # Competition Rules :crossed_swords:
 
-1. Your task is to build a **Reinforcement Learning agent** that plays **Space Shooter**.
-   - You can only store data to be used in a competition in a neural network (saved in a `.pt` file by `save_network()`)
-   - In the competition, your agent will call the `choose_move()` function in `main.py` to select a move (`choose_move()` may call other functions in `main.py`)
-   - Any code not in `main.py` will not be used.
-   - We **strongly suggest** you use a neural network.
-2. Submission deadline: **5pm UTC, Sunday**.
-   - You can update your code after submitting, but **not after the deadline**.
-   - Check your submission is valid with `check_submission()`
-3. The competition is a knockout tournament where your AI will play other teams' AIs 1-v-1
-   - Each 1-v-1 matchup consists of a **best of 5 game** with the **starting positions of the players** chosen randomly.
+## 1. You must build a **Reinforcement Learning agent**
 
-The competition & discussion will be in [Gather Town](https://app.gather.town/app/nJwquzJjD4TLKcTy/Delta%20Academy) at **6pm UTC on Sunday** (60 mins after submission deadline)!
+- Rules-based agents are not allowed
+
+## 2. Only write code in `main.py`
+
+- You can only store data to be used in a competition in a neural network
+- You can only store data to be used in a competition in a neural network (saved in a `.pt` file by `save_network()`)
+- In the competition, your agent will call the `choose_move()` function in `main.py` to select a move (`choose_move()` may call other functions in `main.py`)
+- Any code not in `main.py` will not be used.
+
+## 3. `check_submission()` must pass!
+
+## Submission deadline: **1:30pm UTC, Sunday**.
+
+- You can update your code after submitting, but **not after the deadline**.
+
+## Competition Format
+
+The competition is a knockout tournament where your AI will play other teams' AIs 1-v-1.
+
+Each 1-v-1 matchup consists of a **best of 5 game** with the **starting positions of the players** chosen randomly (behind a laser wall).
+
+The competition & discussion will be in [Gather Town](https://app.gather.town/app/nJwquzJjD4TLKcTy/Delta%20Academy) at **2:30pm UTC on Sunday** (60 mins after submission deadline)!
 
 ![Ex](images/tournament_tree.png)
 
@@ -54,7 +57,9 @@ The competition & discussion will be in [Gather Town](https://app.gather.town/ap
 
 ### States :space_invader:
 
-The state space is repesented as a **1d numpy array** of length **18**. Each element contains information about the location of objects in the arena.
+The state space is represented as a **1D `numpy array`** of length **18**.
+
+Each element contains information about the location of objects in the arena.
 
 #### Each object has three elements in the array:
 
@@ -66,41 +71,49 @@ Each element is **normalised** to be between -1 and 1.
 
 #### The following objects are represented in the array (in order):
 
-- The player you control
-- Your opponent
-- Your first bullet
-- Your second bullet
-- Your opponents first bullet
-- Your opponents second bullet
+1. The player you control
+2. Your opponent
+3. Your first bullet
+4. Your second bullet
+5. Your opponents first bullet
+6. Your opponents second bullet
 
 If you or your opponent have bullets that have not yet been fired, their location is represented by **[0,0,0]**
 
 ### Actions :axe:
 
-**Actions** in space shooter are integers from the set {0,1,2,3,4,5}. They correspond to the following for your spaceship...
+Each player controls their ships with actions that either move, turn or shoot. Actions are taken by returning an integer from `choose_move`.
 
-- **0**: Rotate your ship 15 degrees clockwise
-- **1**: Rotate your ship 15 degrees anti-clockwise
-- **2**: Move forward the direction you're facing
-- **3**: Shoot!
-- **4**: Strafe left
-- **5**: Strafe right
+| Num | Action                                      |
+| --- | ------------------------------------------- |
+| 0   | Rotate 15 degrees clockwise                 |
+| 1   | Rotate anti-clockwise                       |
+| 2   | Move forward in the direction you're facing |
+| 3   | Shoot                                       |
+| 4   | Strafe left                                 |
+| 5   | Strafe right                                |
 
 ### Rewards :moneybag:
 
-You receive `+1` for winning, `-1` for losing and `0` for a draw. You receive `0` for all other moves.
+| Reward | Step                     |
+| ------ | ------------------------ |
+| `+1`   | You win                  |
+| `-1`   | You lose                 |
+| `0`    | a draw / all other steps |
 
 ### Playing against your bot :video_game:
 
 You can play against your bot by using the `human_player` function to choose_move. You control the spaceship using the .
 keyboard with the following controls.
 
-- **left arrow**: Rotate left
-- **right arrow**: Rotate right
-- **forward arrow**: Move forward
-- **spacebar**: Shoot
-- **a**: Strafe left
-- **d**: Strafe right
+| Key                     | Action       |
+| ----------------------- | ------------ |
+| &#8593; (`Up` arrow)    | Move forward |
+| &#8592; (`Left` arrow)  | Rotate left  |
+| &#8594; (`Right` arrow) | Rotate right |
+| `A`                     | Strafe left  |
+| `D`                     | Strafe right |
+| `Space`                 | Shoot        |
 
 ## Functions you write :point_left:
 
@@ -176,12 +189,6 @@ Inputs:
 
 </details>
 
-## Other code :gear:
-
-There are **a load** of functions in `game_mechanics.py`. The useful functions are clearly indicated and are explained in their docstrings. **Feel free to use these, but don't change them.** This is because the original `game_mechanics.py` file will be used in the competition.
-
-If you want to tweak one, copy-paste it to `main.py` and rename it.
-
 ## Suggested Approach :+1:
 
 We recommend you start with the laser walls off so that your bot learns to orient and shoot at the opponent.
@@ -194,8 +201,10 @@ While training don't forget the general adivce for training RL agents:
 
 1. Discuss your neural network architecture - how many inputs, outputs, hidden layers & which activation functions should you use
 2. **Write `train()`** (you can borrow code from past exercises).
-3. Insert debugging messages - you want to make sure that:
+3. Insert debugging messages & use `tensorboard` for logging - you want to make sure that:
+
+   - Performance on shooter is improving :arrow_up:
    - Loss is decreasing :chart_with_downwards_trend:
    - The magnitude of update steps are decreasing :arrow_down:
-   - Performance on shooter is improving :arrow_up:
+
 4. Iterate on the neural network architecture, hyperparameters & training algorithm
