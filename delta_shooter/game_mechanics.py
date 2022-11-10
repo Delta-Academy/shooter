@@ -165,17 +165,22 @@ class ShooterEnv(gym.Env):
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 64)
 
-    def _step(self, action: int, player: Spaceship) -> None:
+    def _step(self, action: Optional[int], player: Spaceship) -> None:
         """Takes a single step for one player."""
 
+        # If action is None, do not move (Currently only used for human_player)
+        if action is None:
+            return
         assert isinstance(action, (int, np.int64)) and action in range(  # type: ignore
             6
-        ), f"Action should be an integer 0-3. Got {action}"
+        ), f"Action should be an integer 0-5. Got {action}"
         self._take_action(action, player)
 
-    def step(self, action: int) -> Tuple[np.ndarray, float, bool, Dict]:
-        if action is not None:
-            self._step(action, self.player1)
+    def step(self, action: Optional[int]) -> Tuple[np.ndarray, float, bool, Dict]:
+        """Action should be an integer 0-5 for all bot moves, None is made available for the human
+        player as it is too difficult to control otherwise."""
+
+        self._step(action, self.player1)
 
         opponent_move = self.opponent_choose_move(state=self.observation_player2)
         if opponent_move is not None:
@@ -222,7 +227,10 @@ class ShooterEnv(gym.Env):
 
     @staticmethod
     def normalise(x: float, max_x: float) -> float:
-        """Normalise x to be between -1 and 1."""
+        """Normalise x to be between -1 and 1.
+
+        (x must always be positive)
+        """
         return 2 * (x / max_x) - 1
 
     @property
