@@ -3,8 +3,6 @@ import time
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
-import gym
-import gym.spaces
 import numpy as np
 import pygame
 import torch
