@@ -106,7 +106,7 @@ def choose_move_randomly(state: np.ndarray) -> int:
     return np.random.randint(6)
 
 
-class ShooterEnv(gym.Env):
+class ShooterEnv:
     def __init__(
         self,
         opponent_choose_move: Callable,
@@ -124,8 +124,6 @@ class ShooterEnv(gym.Env):
             self.screen = DummyScreen(GAME_SIZE)
 
         self.num_envs = 1
-        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(18,))
-        self.action_space = gym.spaces.Discrete(6)  # type: ignore
         self.include_barriers = include_barriers
         self.barriers = get_barriers() if include_barriers else []
         self.reset()
@@ -137,6 +135,7 @@ class ShooterEnv(gym.Env):
 
         opposite_spawn = {0: 1, 1: 0, 2: 3, 3: 2}
         player1_idx = random.choice(range(4))
+        # PLayer 2 spawns on the opposite side of the map
         player2_idx = opposite_spawn[player1_idx]
 
         self.player1 = Spaceship(
