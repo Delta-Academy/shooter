@@ -3,16 +3,23 @@ import time
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
-import gym
 import numpy as np
 import pygame
 import torch
 from torch import nn
 
-from models import BARRIERS, DOWN, LEFT, RIGHT, UP, DummyScreen, GameObject, Spaceship
+from models import (
+    DOWN,
+    GAME_SIZE,
+    LEFT,
+    RIGHT,
+    UP,
+    DummyScreen,
+    GameObject,
+    Spaceship,
+    get_barriers,
+)
 from shooter_utils import load_sprite, print_text
-
-GAME_SIZE = (600, 450)
 
 SPAWN_POINTS = [
     (int(GAME_SIZE[0] * 0.1), GAME_SIZE[1] // 2),
@@ -26,12 +33,16 @@ SPAWN_ORIENTATIONS = [RIGHT, LEFT, DOWN, UP]
 
 HERE = Path(__file__).parent.resolve()
 
+BLACK_COLOR = (0, 0, 0)
+WHITE_COLOR = (255, 255, 255)
+
 
 def play_shooter(
     your_choose_move: Callable[[np.ndarray], int],
     opponent_choose_move: Callable[[np.ndarray], int],
     game_speed_multiplier: float = 1,
     render: bool = False,
+    include_barriers: bool = True,
 ) -> float:
     """Play a game where moves are chosen by `your_choose_move()` and `opponent_choose_move()`.
 
@@ -47,14 +58,17 @@ def play_shooter(
     Returns: total_return, which is the sum of return from the game
     """
     total_return = 0.0
-    game = ShooterEnv(
-        opponent_choose_move, render=render, game_speed_multiplier=game_speed_multiplier
+    env = ShooterEnv(
+        opponent_choose_move,
+        render=render,
+        game_speed_multiplier=game_speed_multiplier,
+        include_barriers=include_barriers,
     )
 
-    state, _, done, _ = game.reset()
+    state, _, done, _ = env.reset()
     while not done:
         action = your_choose_move(state)
-        state, reward, done, _ = game.step(action)
+        state, reward, done, _ = env.step(action)
         total_return += reward
     return total_return
 
@@ -87,15 +101,16 @@ def save_network(network: nn.Module, team_name: str) -> None:
 
 
 def choose_move_randomly(state: np.ndarray) -> int:
-    return np.random.randint(4)
+    return np.random.randint(6)
 
 
-class ShooterEnv(gym.Env):
+class ShooterEnv:
     def __init__(
         self,
         opponent_choose_move: Callable,
         render: bool = False,
         game_speed_multiplier: float = 1,
+        include_barriers: bool = True,
     ):
 
         self._render = render
@@ -106,32 +121,34 @@ class ShooterEnv(gym.Env):
         else:
             self.screen = DummyScreen(GAME_SIZE)
 
-        self.reset()
         self.num_envs = 1
-        self.action_space = gym.spaces.Discrete(4)  # type: ignore
-
+        self.include_barriers = include_barriers
+        self.barriers = get_barriers() if include_barriers else []
+        self.reset()
         if self._render:
             self._draw()
 
     def reset(self) -> Tuple[np.ndarray, float, bool, Dict]:
         self.message = ""
-        spawn_idx = list(range(len(SPAWN_POINTS)))
-        random.shuffle(spawn_idx)
 
-        player1_idx = spawn_idx.pop()
-        player2_idx = spawn_idx.pop()
+        opposite_spawn = {0: 1, 1: 0, 2: 3, 3: 2}
+        player1_idx = random.choice(range(4))
+        # PLayer 2 spawns on the opposite side of the map
+        player2_idx = opposite_spawn[player1_idx]
 
         self.player1 = Spaceship(
             SPAWN_POINTS[player1_idx],
-            SPAWN_ORIENTATIONS[player1_idx],
+            random.choice(SPAWN_ORIENTATIONS),
             player=1,
             graphical=self._render,
+            include_barriers=self.include_barriers,
         )
         self.player2 = Spaceship(
             SPAWN_POINTS[player2_idx],
-            SPAWN_ORIENTATIONS[player2_idx],
+            random.choice(SPAWN_ORIENTATIONS),
             player=2,
             graphical=self._render,
+            include_barriers=self.include_barriers,
         )
         self.done = False
         self.n_actions = 0
@@ -139,21 +156,27 @@ class ShooterEnv(gym.Env):
 
     def init_graphics(self) -> None:
         pygame.init()
-        pygame.display.set_caption("Space Rocks")
+        pygame.display.set_caption("Space Shooter")
         self.screen = pygame.display.set_mode(GAME_SIZE)
         self.background = load_sprite("space", False)
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 64)
 
-    def _step(self, action: int, player: Spaceship) -> None:
+    def _step(self, action: Optional[int], player: Spaceship) -> None:
         """Takes a single step for one player."""
 
+        # If action is None, do not move (Currently only used for human_player)
+        if action is None:
+            return
         assert isinstance(action, (int, np.int64)) and action in range(  # type: ignore
-            4
-        ), f"Action should be an integer 0-3. Got {action}"
+            6
+        ), f"Action should be an integer 0-5. Got {action}"
         self._take_action(action, player)
 
-    def step(self, action: int) -> Tuple[np.ndarray, float, bool, Dict]:
+    def step(self, action: Optional[int]) -> Tuple[np.ndarray, float, bool, Dict]:
+        """Action should be an integer 0-5 for all bot moves, None is made available for the human
+        player as it is too difficult to control otherwise."""
+
         self._step(action, self.player1)
 
         opponent_move = self.opponent_choose_move(state=self.observation_player2)
@@ -191,13 +214,21 @@ class ShooterEnv(gym.Env):
         ):
             observation_player1[idx * 3 : (idx + 1) * 3] = np.array(
                 [
-                    object.position[0] / GAME_SIZE[0],  # Divide by the max value
-                    object.position[1] / GAME_SIZE[1],
-                    object.angle % 360 / 360,
+                    self.normalise(object.position[0], GAME_SIZE[0]),
+                    self.normalise(object.position[1], GAME_SIZE[1]),
+                    self.normalise(object.angle % 360, 360),
                 ]
             )
 
         return observation_player1
+
+    @staticmethod
+    def normalise(x: float, max_x: float) -> float:
+        """Normalise x to be between -1 and 1.
+
+        (x must always be positive)
+        """
+        return 2 * (x / max_x) - 1
 
     @property
     def observation_player2(self) -> np.ndarray:
@@ -208,9 +239,9 @@ class ShooterEnv(gym.Env):
         ):
             observation_player2[idx * 3 : (idx + 1) * 3] = np.array(
                 [
-                    object.position[0] / GAME_SIZE[0],  # Divide by the max value
-                    object.position[1] / GAME_SIZE[1],
-                    object.angle % 360 / 360,
+                    self.normalise(object.position[0], GAME_SIZE[0]),
+                    self.normalise(object.position[1], GAME_SIZE[1]),
+                    self.normalise(object.angle % 360, 360),
                 ]
             )
 
@@ -227,6 +258,10 @@ class ShooterEnv(gym.Env):
             player.move_forward()
         elif action == 3:
             player.shoot()
+        elif action == 4:
+            player.strafe_left()
+        elif action == 5:
+            player.strafe_right()
 
     def _process_game_logic(self) -> Optional[List[Spaceship]]:
         for game_object in self._get_game_objects():
@@ -234,27 +269,6 @@ class ShooterEnv(gym.Env):
 
         # Can get both players winning reservoir dogs style
         winners = []
-
-        for bullet in self.player1.bullets:
-            # Remove
-            assert bullet.radius == 5
-            if bullet.collides_with(self.player2):
-                self.done = True
-                self.message += "Player 1 wins!"
-                self.player2.dead = True
-                if self._render:
-                    self._draw()
-
-                winners.append(self.player1)
-
-        for bullet in self.player2.bullets:
-            if bullet.collides_with(self.player1):
-                self.done = True
-                self.message += "Player 2 wins!"
-                winners.append(self.player2)
-                self.player1.dead = True
-                if self._render:
-                    self._draw()
 
         for bullet in self.player1.bullets:
             if (
@@ -270,12 +284,30 @@ class ShooterEnv(gym.Env):
             ):
                 self.player2.bullets.remove(bullet)
 
+        for bullet in self.player1.bullets:
+            if bullet.collides_with(self.player2):
+                self.done = True
+                self.message = "Player 1 wins!"
+                self.player2.dead = True
+                if self._render:
+                    self._draw()
+
+                winners.append(self.player1)
+
+        for bullet in self.player2.bullets:
+            if bullet.collides_with(self.player1):
+                self.done = True
+                self.message += "Player 2 wins!"
+                winners.append(self.player2)
+                self.player1.dead = True
+                if self._render:
+                    self._draw()
+
         return winners or None
 
     def _draw(self) -> None:
         assert not isinstance(self.screen, DummyScreen), "Don't call _draw() with a dummy screen"
         self.screen.blit(self.background, (0, 0))
-
         for game_object in self._get_game_objects():
             game_object.draw(self.screen)
 
@@ -294,7 +326,7 @@ class ShooterEnv(gym.Env):
         if not self.player2.dead:
             game_objects.extend([self.player2, *self.player2.bullets])
 
-        game_objects.extend(BARRIERS)
+        game_objects.extend(self.barriers)
         return game_objects
 
 
@@ -311,4 +343,8 @@ def human_player(*arg, **kwargs) -> Optional[int]:
         return 0
     elif is_key_pressed[pygame.K_LEFT]:
         return 1
+    elif is_key_pressed[pygame.K_a]:
+        return 4
+    elif is_key_pressed[pygame.K_d]:
+        return 5
     return 2 if is_key_pressed[pygame.K_UP] else None
