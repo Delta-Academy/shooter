@@ -7,7 +7,7 @@ from pygame.math import Vector2
 from pygame.surface import Surface
 from pygame.transform import rotozoom
 
-from shooter_utils import edge_barriers, load_sound, load_sprite
+from game_mechanics.shooter_utils import edge_barriers, load_sound, load_sprite
 
 UP = Vector2(0, -1)
 DOWN = Vector2(0, 1)
