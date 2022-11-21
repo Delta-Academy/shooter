@@ -8,7 +8,7 @@ import pygame
 import torch
 from torch import nn
 
-from models import (
+from game_mechanics.models import (
     DOWN,
     GAME_SIZE,
     LEFT,
@@ -19,7 +19,7 @@ from models import (
     Spaceship,
     get_barriers,
 )
-from shooter_utils import load_sprite, print_text
+from game_mechanics.shooter_utils import load_sprite, print_text
 
 SPAWN_POINTS = [
     (int(GAME_SIZE[0] * 0.1), GAME_SIZE[1] // 2),
