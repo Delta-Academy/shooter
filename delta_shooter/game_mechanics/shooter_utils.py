@@ -13,17 +13,17 @@ from pygame.surface import Surface
 if TYPE_CHECKING:
     from models import DummyScreen
 
-HERE = Path(__file__).parent.resolve()
+ASSET_PATH = Path(__file__).parent.resolve() / "assets"
 
 
 def load_sprite(name: str, with_alpha: bool = True) -> Surface:
-    path = HERE / f"assets/sprites/{name}.png"
+    path = ASSET_PATH / f"sprites/{name}.png"
     loaded_sprite = load(path)
     return loaded_sprite.convert_alpha() if with_alpha else loaded_sprite.convert()
 
 
 def load_sound(name: str) -> Sound:
-    path = HERE / f"assets/sounds/{name}.wav"
+    path = ASSET_PATH / f"sounds/{name}.wav"
     return Sound(str(path))
 
 

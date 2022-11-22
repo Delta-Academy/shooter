@@ -19,7 +19,7 @@ from game_mechanics.models import (
 )
 from game_mechanics.shooter_utils import load_sprite, print_text
 
-HERE = Path(__file__).parent.resolve()
+HERE = Path(__file__).parent.parent.resolve()
 
 BLACK_COLOR = (0, 0, 0)
 WHITE_COLOR = (255, 255, 255)
