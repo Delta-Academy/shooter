@@ -6,7 +6,9 @@ You challenge their top marksman to a laser wall shootout.
 
 You must terminate your opponent. And you must terminate them using RL.
 
-Training an agent to play this game is tricky! Before starting, read the suggested approach at the bottom of this page :point_down: :point_down: :point_down:
+#### Important!! Read me !!!!
+
+:rotating_light: :rotating_light: :rotating_light: Training an agent to play this game is tricky! Before starting, read the suggested approach at the bottom of this page :point_down: :point_down: :point_down:
 
 ![Space shooter starting position](images/space-shooter.png)
 
