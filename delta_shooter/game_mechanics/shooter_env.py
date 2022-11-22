@@ -3,11 +3,13 @@ import time
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
-import numpy as np
-
+################## TAKEEEEEEE ME OUTTTTTTTTTTTTTTTTTTTTTTT ##################
 import gym
+import numpy as np
 import pygame
 import torch
+from torch import nn
+
 from game_mechanics.models import (
     DummyScreen,
     GameObject,
@@ -17,7 +19,6 @@ from game_mechanics.models import (
     get_spawn_points,
 )
 from game_mechanics.shooter_utils import load_sprite, print_text
-from torch import nn
 
 HERE = Path(__file__).parent.parent.resolve()
 
