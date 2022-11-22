@@ -6,6 +6,8 @@ You challenge their top marksman to a laser wall shootout.
 
 You must terminate your opponent. And you must terminate them using RL.
 
+Training an agent to play this game is tricky! Before starting, read the suggested approach at the bottom of this page :point_down: :point_down: :point_down:
+
 ![Space shooter starting position](images/space-shooter.png)
 
 ## Rules of Space Shooter
@@ -32,14 +34,13 @@ You ship is not able to leave the arena, but you'd never do that to your space-g
 
 ## 2. Only write code in `main.py`
 
-- You can only store data to be used in a competition in a neural network
 - You can only store data to be used in a competition in a neural network (saved in a `.pt` file by `save_network()`)
 - In the competition, your agent will call the `choose_move()` function in `main.py` to select a move (`choose_move()` may call other functions in `main.py`)
 - Any code not in `main.py` will not be used.
 
 ## 3. `check_submission()` must pass!
 
-## Submission deadline: **1:30pm UTC, Sunday**.
+## Submission deadline: **2:30pm UTC, Sunday**.
 
 - You can update your code after submitting, but **not after the deadline**.
 
@@ -55,7 +56,7 @@ The competition & discussion will be in [Gather Town](https://app.gather.town/ap
 
 ## Technical Details :hammer:
 
-### States :space_invader:
+### State :space_invader:
 
 The state space is represented as a **1D `numpy array`** of length **18**.
 
@@ -136,25 +137,25 @@ In the competition, the choose_move() function is called to make your next move.
 
 ## Existing Code :pray:
 
-### Need to Know
+### `ShooterEnv`
 
-<details>
-<summary><code style="white-space:nowrap;">  Env</code> class</summary>
 The environment class controls the game and runs the opponent. It should be used for training your agent.
-<br />
-<br />
+
 See example usage in <code style="white-space:nowrap;">play_shooter()</code>.
-<br />
-<br />
-The opponent's <code style="white-space:nowrap;">choose_move</code> function is input at initialisation (when <code style="white-space:nowrap;">Env(opponent_choose_move)</code> is called). The first player is chosen at random when <code style="white-space:nowrap;">Env.reset()</code> is called. Every time you call <code style="white-space:nowrap;">Env.step()</code>, 2 moves are taken - yours and then your opponent's. Your opponent sees the observation vector flipped relative to yours (so their position is first).
-<br />
-<br />
 
-The env's <code style="white-space:nowrap;">render</code> argument can be used to visualise the game. This is required for <code style="white-space:nowrap">human_player()</code> to work. Player1 is the pink ship, the opponent is the red ship.
+#### Arguments to `ShooterEnv`
 
-The env also has a <code style="white-space:nowrap;">include_barriers</code> argument which toggles the laser_walls on and off. In the tournament the walls will be on, but you can turn them off to make initial training easier.
+`opponent_choose_move`
+The opponent's <code style="white-space:nowrap;">choose_move</code> function is input at initialisation. The first player is chosen at random when <code style="white-space:nowrap;">Env.reset()</code> is called. Every time you call <code style="white-space:nowrap;">Env.step()</code>, 2 moves are taken - yours and then your opponent's. Your opponent sees the observation vector flipped relative to yours (so their position is first).
 
-</details>
+`render`
+When set to `True`, the game is rendered graphically. This is required for <code style="white-space:nowrap">human_player()</code> to work. Player1 is the pink ship, the opponent is the red ship.
+
+`include_barriers`
+When set to `False` this turns the laser walls off. In the tournament the walls will be on, but you can turn them off to make initial training easier.
+
+`half_sized_game`
+When set to `True`, the size of the arena is halved. A full sized arena will be used in the tournament, but training is easier in the small arena.
 
 <details>
 <summary><code style="white-space:nowrap;">  choose_move()</code></summary>
@@ -176,26 +177,23 @@ Takes the state as input and outputs an action.
 
 <details>
 <summary><code style="white-space:nowrap;">  play_shooter()</code></summary>
-Plays 1 game of shooter, which is visualised graphically. (if <code style="white-space:nowrap;">render=True</code>)
-<br />
-<br />
-Inputs:
+Plays 1 game of shooter, which is visualised graphically (if <code style="white-space:nowrap;">render=True</code>).
 
-<code style="white-space:nowrap;">your_choose_move</code>: Function that takes the state and outputs the action for your agent.
+This demonstrates how to interact with the env.
 
-<code style="white-space:nowrap;">opponent_choose_move</code>: Function that takes the state and outputs the action for the opponent.
+Pass your agent's `choose_move` function as the `your_choose_move` argument.
 
-<code style="white-space:nowrap;">game_speed_multiplier</code>: controls the gameplay speed. High numbers mean fast games, low numbers mean slow games.
+The remaining arguments to this function are the same as the arguments to <code style="white-space:nowrap;">ShooterEnv</code>.
 
 </details>
 
 ## Suggested Approach :+1:
 
-We recommend you start with the laser walls off so that your bot learns to orient and shoot at the opponent.
+Train against a random opponent to start with. As you get better you can train against checkpointed versions of your own bot.
 
-Then turn the walls on and continue training.
+Start with the laser walls off and with the half sized env, so that your bot learns to orient and shoot at the opponent.
 
-If you are still struggling, you can adjust `GAME_SIZE` in `models.py` to make the arena smaller. Once you have a working bot, you can increase the size of the arena again back to `(600, 450)`.
+Once your bot learns to beat random in this env. Save your bot and reintroduce either the laser walls or the full sized arena. Then continue training the same bot against random. Finally train against random in the full sized arena with walls, to match the tournament.
 
 While training don't forget the general adivce for training RL agents:
 
