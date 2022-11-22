@@ -67,6 +67,10 @@ if __name__ == "__main__":
         """
         return choose_move(state, neural_network=my_network)
 
+    # Removing the barriers and making the game half-sized will make it easier to train!
+    include_barriers = False
+    half_game_size = True
+
     # The code below plays a single game against your bot.
     # You play as the pink ship
     play_shooter(
@@ -74,5 +78,6 @@ if __name__ == "__main__":
         opponent_choose_move=choose_move_no_network,
         game_speed_multiplier=1,
         render=True,
-        include_barriers=True,
+        include_barriers=include_barriers,
+        half_game_size=half_game_size,
     )

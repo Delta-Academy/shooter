@@ -3,33 +3,21 @@ import time
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
+import gym
 import numpy as np
 import pygame
 import torch
 from torch import nn
 
 from game_mechanics.models import (
-    DOWN,
-    GAME_SIZE,
-    LEFT,
-    RIGHT,
-    UP,
     DummyScreen,
     GameObject,
     Spaceship,
     get_barriers,
+    get_spawn_orientations,
+    get_spawn_points,
 )
 from game_mechanics.shooter_utils import load_sprite, print_text
-
-SPAWN_POINTS = [
-    (int(GAME_SIZE[0] * 0.1), GAME_SIZE[1] // 2),
-    (int(GAME_SIZE[0] * 0.9), GAME_SIZE[1] // 2),
-    (GAME_SIZE[0] // 2, int(GAME_SIZE[1] * 0.1)),
-    (GAME_SIZE[0] // 2, int(GAME_SIZE[1] * 0.9)),
-]
-
-SPAWN_ORIENTATIONS = [RIGHT, LEFT, DOWN, UP]
-
 
 HERE = Path(__file__).parent.resolve()
 
@@ -43,6 +31,7 @@ def play_shooter(
     game_speed_multiplier: float = 1,
     render: bool = False,
     include_barriers: bool = True,
+    half_game_size: bool = False,
 ) -> float:
     """Play a game where moves are chosen by `your_choose_move()` and `opponent_choose_move()`.
 
@@ -63,6 +52,7 @@ def play_shooter(
         render=render,
         game_speed_multiplier=game_speed_multiplier,
         include_barriers=include_barriers,
+        half_sized_game=half_game_size,
     )
 
     state, _, done, _ = env.reset()
@@ -104,26 +94,33 @@ def choose_move_randomly(state: np.ndarray) -> int:
     return np.random.randint(6)
 
 
-class ShooterEnv:
+class ShooterEnv(gym.Env):
     def __init__(
         self,
         opponent_choose_move: Callable,
         render: bool = False,
         game_speed_multiplier: float = 1,
         include_barriers: bool = True,
+        half_sized_game: bool = False,
     ):
 
         self._render = render
         self.opponent_choose_move = opponent_choose_move
         self.game_speed_multiplier = game_speed_multiplier
+        self.game_size = (300, 225) if half_sized_game else (600, 450)
         if self._render:
             self.init_graphics()
         else:
-            self.screen = DummyScreen(GAME_SIZE)
+            self.screen = DummyScreen(self.game_size)
 
         self.num_envs = 1
         self.include_barriers = include_barriers
-        self.barriers = get_barriers() if include_barriers else []
+        self.barriers = get_barriers(self.game_size) if include_barriers else []
+
+        # TAKEEEEEEEE ME OUOTTTTTTTTTTTTTTTT
+        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(18,))
+        self.action_space = gym.spaces.Discrete(6)
+
         self.reset()
         if self._render:
             self._draw()
@@ -136,17 +133,21 @@ class ShooterEnv:
         # PLayer 2 spawns on the opposite side of the map
         player2_idx = opposite_spawn[player1_idx]
 
+        spawn_points = get_spawn_points(self.game_size)
+
         self.player1 = Spaceship(
-            SPAWN_POINTS[player1_idx],
-            random.choice(SPAWN_ORIENTATIONS),
+            spawn_points[player1_idx],
+            random.choice(get_spawn_orientations()),
             player=1,
+            game_size=self.game_size,
             graphical=self._render,
             include_barriers=self.include_barriers,
         )
         self.player2 = Spaceship(
-            SPAWN_POINTS[player2_idx],
-            random.choice(SPAWN_ORIENTATIONS),
+            spawn_points[player2_idx],
+            random.choice(get_spawn_orientations()),
             player=2,
+            game_size=self.game_size,
             graphical=self._render,
             include_barriers=self.include_barriers,
         )
@@ -157,7 +158,7 @@ class ShooterEnv:
     def init_graphics(self) -> None:
         pygame.init()
         pygame.display.set_caption("Space Shooter")
-        self.screen = pygame.display.set_mode(GAME_SIZE)
+        self.screen = pygame.display.set_mode(self.game_size)
         self.background = load_sprite("space", False)
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 64)
@@ -214,8 +215,8 @@ class ShooterEnv:
         ):
             observation_player1[idx * 3 : (idx + 1) * 3] = np.array(
                 [
-                    self.normalise(object.position[0], GAME_SIZE[0]),
-                    self.normalise(object.position[1], GAME_SIZE[1]),
+                    self.normalise(object.position[0], self.game_size[0]),
+                    self.normalise(object.position[1], self.game_size[1]),
                     self.normalise(object.angle % 360, 360),
                 ]
             )
@@ -239,8 +240,8 @@ class ShooterEnv:
         ):
             observation_player2[idx * 3 : (idx + 1) * 3] = np.array(
                 [
-                    self.normalise(object.position[0], GAME_SIZE[0]),
-                    self.normalise(object.position[1], GAME_SIZE[1]),
+                    self.normalise(object.position[0], self.game_size[0]),
+                    self.normalise(object.position[1], self.game_size[1]),
                     self.normalise(object.angle % 360, 360),
                 ]
             )
