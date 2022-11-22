@@ -3,12 +3,11 @@ import time
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
-import gym
 import numpy as np
+
+import gym
 import pygame
 import torch
-from torch import nn
-
 from game_mechanics.models import (
     DummyScreen,
     GameObject,
@@ -18,6 +17,7 @@ from game_mechanics.models import (
     get_spawn_points,
 )
 from game_mechanics.shooter_utils import load_sprite, print_text
+from torch import nn
 
 HERE = Path(__file__).parent.parent.resolve()
 
@@ -91,7 +91,7 @@ def save_network(network: nn.Module, team_name: str) -> None:
 
 
 def choose_move_randomly(state: np.ndarray) -> int:
-    return np.random.randint(6)
+    return int(random.random() * 6)
 
 
 class ShooterEnv(gym.Env):
