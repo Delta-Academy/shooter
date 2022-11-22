@@ -19,7 +19,6 @@ HERE = Path(__file__).parent.resolve()
 def load_sprite(name: str, with_alpha: bool = True) -> Surface:
     path = HERE / f"assets/sprites/{name}.png"
     loaded_sprite = load(path)
-
     return loaded_sprite.convert_alpha() if with_alpha else loaded_sprite.convert()
 
 

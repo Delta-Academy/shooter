@@ -6,6 +6,7 @@ repos:
     hooks:
     -   id: check-yaml
     -   id: end-of-file-fixer
+        exclude: "game_mechanics_hash.txt"
     -   id: trailing-whitespace
 -   repo: https://github.com/myint/docformatter
     rev: v1.3.1
@@ -30,7 +31,12 @@ repos:
       - id: pytest-check
         name: pytest-check
         stages: [push]
-        entry: make test
+        entry: pytest
         language: system
         pass_filenames: false
         always_run: true
+      - id: hash-game-mechanics
+        name: Hash game_mechanics.py
+        entry: hash-game-mechanics
+        language: python
+        files: 'game_mechanics*'
