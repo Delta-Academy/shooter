@@ -15,9 +15,6 @@ RIGHT = Vector2(1, 0)
 LEFT = Vector2(-1, 0)
 
 
-GAME_SIZE = (600, 450)
-
-
 BLACK_COLOR = (0, 0, 0)
 WHITE_COLOR = (255, 255, 255)
 NEON_GREEN = (57, 255, 20)
@@ -116,6 +113,7 @@ class Spaceship(GameObject):
         starting_position: Tuple[int, int],
         starting_orientation: Vector2,
         player: int,
+        game_size: Tuple[int, int],
         graphical: bool = True,
         include_barriers: bool = True,
     ) -> None:
@@ -141,7 +139,8 @@ class Spaceship(GameObject):
 
         self.reset()
         self.include_barriers = include_barriers
-        self.barriers = get_barriers() if self.include_barriers else []
+        self.game_size = game_size
+        self.barriers = get_barriers(self.game_size) if self.include_barriers else []
 
     def reset(self) -> None:
         self.set_position(self.starting_position)
@@ -203,7 +202,13 @@ class Spaceship(GameObject):
             + self.velocity
             + Vector2(np.random.normal(0, self.SHOOTING_JITTER))
         )
-        bullet = Bullet(self.position, bullet_velocity, self.graphical, self.include_barriers)
+        bullet = Bullet(
+            self.position,
+            bullet_velocity,
+            self.graphical,
+            game_size=self.game_size,
+            include_barriers=self.include_barriers,
+        )
         self.bullets.append(bullet)
         self.laser_sound.play()
 
@@ -214,6 +219,7 @@ class Bullet(GameObject):
         position: Coord,
         velocity: Union[int, Vector2],
         graphical: bool,
+        game_size: Tuple[int, int],
         include_barriers: bool = True,
     ):
         self.hit_barrier = False
@@ -222,7 +228,7 @@ class Bullet(GameObject):
         else:
             super().__init__(position, DummyBullet(), velocity)
         self.name = "bullet"
-        self.barriers = get_barriers() if include_barriers else []
+        self.barriers = get_barriers(game_size) if include_barriers else []
 
     def move(self, surface: Any) -> None:
         new_position = self.position + self.velocity
@@ -244,8 +250,6 @@ def intersect(A: Coord, B: Coord, C: Coord, D: Coord) -> bool:
 
 
 class Barrier:
-    WIDTH = 22  # Width of barrier (needs to be even)
-
     def __init__(self, orientation: Orientation, length: int, center: Tuple[int, int]):
         self.orientation = orientation
         # Prevents mypy isssues with potentially unbound vars
@@ -253,18 +257,20 @@ class Barrier:
         self.length = length
         self.center = center
         self.name = "barrier"
+        self.width = self.length // 8
+        self.width = round(self.width / 2) * 2  # Make even
 
         if orientation == "vertical":
-            self.corner1 = (self.center[0] - self.WIDTH // 2, self.center[1] - self.length // 2)
-            self.corner2 = (self.center[0] - self.WIDTH // 2, self.center[1] + self.length // 2)
-            self.corner3 = (self.center[0] + self.WIDTH // 2, self.center[1] - self.length // 2)
-            self.corner4 = (self.center[0] + self.WIDTH // 2, self.center[1] + self.length // 2)
+            self.corner1 = (self.center[0] - self.width // 2, self.center[1] - self.length // 2)
+            self.corner2 = (self.center[0] - self.width // 2, self.center[1] + self.length // 2)
+            self.corner3 = (self.center[0] + self.width // 2, self.center[1] - self.length // 2)
+            self.corner4 = (self.center[0] + self.width // 2, self.center[1] + self.length // 2)
 
         else:
-            self.corner1 = (self.center[0] - self.length // 2, self.center[1] - self.WIDTH // 2)
-            self.corner2 = (self.center[0] + self.length // 2, self.center[1] - self.WIDTH // 2)
-            self.corner3 = (self.center[0] - self.length // 2, self.center[1] + self.WIDTH // 2)
-            self.corner4 = (self.center[0] + self.length // 2, self.center[1] + self.WIDTH // 2)
+            self.corner1 = (self.center[0] - self.length // 2, self.center[1] - self.width // 2)
+            self.corner2 = (self.center[0] + self.length // 2, self.center[1] - self.width // 2)
+            self.corner3 = (self.center[0] - self.length // 2, self.center[1] + self.width // 2)
+            self.corner4 = (self.center[0] + self.length // 2, self.center[1] + self.width // 2)
 
     def hit_barrier(
         self,
@@ -290,34 +296,47 @@ class Barrier:
         )
 
     def draw(self, screen: pygame.surface.Surface) -> None:
-        pygame.draw.line(screen, NEON_GREEN, self.corner1, self.corner2, width=self.WIDTH)
+        pygame.draw.line(screen, NEON_GREEN, self.corner1, self.corner2, width=self.width)
 
     def move(self, screen: pygame.surface.Surface) -> None:
         pass
 
 
-def get_barriers() -> List[Barrier]:
+def get_barriers(game_size: Tuple[int, int]) -> List[Barrier]:
 
-    barrier_length = int(GAME_SIZE[1] * 0.4)
+    barrier_length = int(game_size[1] * 0.4)
     return [
         Barrier(
             orientation="vertical",
-            center=(int(GAME_SIZE[0] * 0.2), int(GAME_SIZE[1] * 0.5)),
+            center=(int(game_size[0] * 0.2), int(game_size[1] * 0.5)),
             length=barrier_length,
         ),
         Barrier(
             orientation="vertical",
-            center=(int(GAME_SIZE[0] * 0.8), int(GAME_SIZE[1] * 0.5)),
+            center=(int(game_size[0] * 0.8), int(game_size[1] * 0.5)),
             length=barrier_length,
         ),
         Barrier(
             orientation="horizontal",
-            center=(int(GAME_SIZE[0] * 0.5), int(GAME_SIZE[1] * 0.2)),
+            center=(int(game_size[0] * 0.5), int(game_size[1] * 0.2)),
             length=barrier_length,
         ),
         Barrier(
             orientation="horizontal",
-            center=(int(GAME_SIZE[0] * 0.5), int(GAME_SIZE[1] * 0.8)),
+            center=(int(game_size[0] * 0.5), int(game_size[1] * 0.8)),
             length=barrier_length,
         ),
     ]
+
+
+def get_spawn_points(game_size: Tuple[int, int]) -> List[Tuple[int, int]]:
+    return [
+        (int(game_size[0] * 0.1), game_size[1] // 2),
+        (int(game_size[0] * 0.9), game_size[1] // 2),
+        (game_size[0] // 2, int(game_size[1] * 0.1)),
+        (game_size[0] // 2, int(game_size[1] * 0.9)),
+    ]
+
+
+def get_spawn_orientations() -> List[Vector2]:
+    return [RIGHT, LEFT, DOWN, UP]
