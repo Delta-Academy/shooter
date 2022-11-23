@@ -60,7 +60,7 @@ The competition & discussion will be in [Gather Town](https://app.gather.town/ap
 
 ### State :space_invader:
 
-The state space is represented as a **1D `numpy array`** of length **24**.
+The state space is represented as a **1D `torch tensor`** of length **24**.
 
 Each element contains information about the location of objects in the arena.
 
@@ -214,17 +214,15 @@ checkpoint_model(model, "checkpoint1.pt")
 env = PokerEnv(ChooseMoveCheckpoint("checkpoint1.pt", choose_move))
 ```
 
-<br />
-<br />
 </details>
 
 ## Suggested Approach :+1:
 
-Train against a random opponent to start with. As you get better you can train against checkpointed versions of your own bot.
-
 Start with the laser walls off and with the half sized env, so that your bot learns to orient and shoot at the opponent.
 
 Once your bot learns to beat random in this env. Save your bot and reintroduce either the laser walls or the full sized arena. Then continue training the same bot against random. Finally train against random in the full sized arena with walls, to match the tournament.
+
+Train against a random opponent to start with. As you get better you can train against checkpointed versions of your own bot.
 
 While training don't forget the general adivce for training RL agents:
 
@@ -237,7 +235,3 @@ While training don't forget the general adivce for training RL agents:
    - The magnitude of update steps are decreasing :arrow_down:
 
 4. Iterate on the neural network architecture, hyperparameters & training algorithm
-
-```
-
-```

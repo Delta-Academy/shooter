@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from game_mechanics import HERE
+HERE = Path(__file__).parent.parent.resolve()
 
 
 class ChooseMoveCheckpoint:
