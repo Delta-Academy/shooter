@@ -1,14 +1,17 @@
 import torch
+from torch import nn
+
 from check_submission import check_submission
 from game_mechanics import (
+    ChooseMoveCheckpoint,
     ShooterEnv,
+    checkpoint_model,
     choose_move_randomly,
     human_player,
     load_network,
     play_shooter,
     save_network,
 )
-from torch import nn
 
 TEAM_NAME = "Team Name"  # <---- Enter your team name here!
 assert TEAM_NAME != "Team Name", "Please change your TEAM_NAME!"
@@ -34,11 +37,11 @@ def choose_move(
     function dictionary. It returns a single action to take.
 
     Args:
-        state: State of the game as a torch tensor, length = 18.
+        state: State of the game as a torch tensor, length = 24.
         neural_network: The pytorch network output by train().
 
     Returns:
-        move (int): The move you want to given the state of the game.
+        move: The move you want to given the state of the game.
                     Should be in {0,1,2,3,4,5}.
     """
     raise NotImplementedError("You need to implement this function!")
