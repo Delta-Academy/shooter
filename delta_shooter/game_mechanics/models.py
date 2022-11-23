@@ -2,12 +2,12 @@ from abc import ABC, abstractmethod
 from typing import Any, List, Literal, Tuple, Union
 
 import numpy as np
+
 import pygame
+from game_mechanics.shooter_utils import edge_barriers, load_sound, load_sprite
 from pygame.math import Vector2
 from pygame.surface import Surface
 from pygame.transform import rotozoom
-
-from game_mechanics.shooter_utils import edge_barriers, load_sound, load_sprite
 
 UP = Vector2(0, -1)
 DOWN = Vector2(0, 1)
@@ -105,7 +105,7 @@ class Spaceship(GameObject):
     ANGLE_TURN = 15
     ACCELERATION = 0.1
     BULLET_SPEED = 60
-    SHOOTING_JITTER = 2.5  # Add randomness to shot direction
+    SHOOTING_JITTER = 1.25  # Add randomness to shot direction
     NUM_BULLETS = 2  # Limit the number on the screen at one time
 
     def __init__(
@@ -200,7 +200,12 @@ class Spaceship(GameObject):
         bullet_velocity = (
             self.direction * self.BULLET_SPEED
             + self.velocity
-            + Vector2(np.random.normal(0, self.SHOOTING_JITTER))
+            + Vector2(
+                (
+                    np.random.normal(0, self.SHOOTING_JITTER),
+                    np.random.normal(0, self.SHOOTING_JITTER),
+                )
+            )
         )
         bullet = Bullet(
             self.position,
