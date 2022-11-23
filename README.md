@@ -60,15 +60,16 @@ The competition & discussion will be in [Gather Town](https://app.gather.town/ap
 
 ### State :space_invader:
 
-The state space is represented as a **1D `numpy array`** of length **18**.
+The state space is represented as a **1D `numpy array`** of length **24**.
 
 Each element contains information about the location of objects in the arena.
 
-#### Each object has three elements in the array:
+#### Each object has four elements in the array:
 
 - 1: The x position of the object in the arena
 - 2: The y position of the object in the arena
-- 3: The angle of the object in the arena (relative to north)
+- 3: The sine of the angle of the object in the arena (relative to north)
+- 4: The cosine of the angle of the object in the arena (relative to north)
 
 Each element is **normalised** to be between -1 and 1.
 
@@ -189,6 +190,34 @@ The remaining arguments to this function are the same as the arguments to <code 
 
 </details>
 
+<details>
+<summary><code style="white-space:nowrap;">  checkpoint_model()</code></summary>
+Save a checkpoint of your model so you can train against it in self-play
+<br />
+<br />
+</details>
+
+<details>
+<summary><code style="white-space:nowrap;">  ChooseMoveCheckpoint()</code></summary>
+Interface to allow the <code style="white-space:nowrap;"> opponent_choose_move</code> function in the environment to be set as a previously-saved checkpoint.
+</br>
+
+Use the checkpoint class as follows:
+
+```python
+# Train a model
+model = ...
+# Save the model after the first round of training
+checkpoint_model(model, "checkpoint1.pt")
+
+# Create a new env, where the opponent is the checkpointed model
+env = PokerEnv(ChooseMoveCheckpoint("checkpoint1.pt", choose_move))
+```
+
+<br />
+<br />
+</details>
+
 ## Suggested Approach :+1:
 
 Train against a random opponent to start with. As you get better you can train against checkpointed versions of your own bot.
@@ -208,3 +237,7 @@ While training don't forget the general adivce for training RL agents:
    - The magnitude of update steps are decreasing :arrow_down:
 
 4. Iterate on the neural network architecture, hyperparameters & training algorithm
+
+```
+
+```
