@@ -1,16 +1,13 @@
+import math
 import random
 import time
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
-################## TAKEEEEEEE ME OUTTTTTTTTTTTTTTTTTTTTTTT ##################
-import gym
-import numpy as np
 import pygame
 import torch
-from torch import nn
-
 from game_mechanics.models import (
+    DummyBullet,
     DummyScreen,
     GameObject,
     Spaceship,
@@ -19,6 +16,7 @@ from game_mechanics.models import (
     get_spawn_points,
 )
 from game_mechanics.shooter_utils import load_sprite, print_text
+from torch import nn
 
 HERE = Path(__file__).parent.parent.resolve()
 
@@ -27,8 +25,8 @@ WHITE_COLOR = (255, 255, 255)
 
 
 def play_shooter(
-    your_choose_move: Callable[[np.ndarray], int],
-    opponent_choose_move: Callable[[np.ndarray], int],
+    your_choose_move: Callable[[torch.Tensor], int],
+    opponent_choose_move: Callable[[torch.Tensor], int],
     game_speed_multiplier: float = 1,
     render: bool = False,
     include_barriers: bool = True,
@@ -91,11 +89,11 @@ def save_network(network: nn.Module, team_name: str) -> None:
                 raise
 
 
-def choose_move_randomly(state: np.ndarray) -> int:
+def choose_move_randomly(state: torch.Tensor) -> int:
     return int(random.random() * 6)
 
 
-class ShooterEnv(gym.Env):
+class ShooterEnv:
     def __init__(
         self,
         opponent_choose_move: Callable,
@@ -118,15 +116,11 @@ class ShooterEnv(gym.Env):
         self.include_barriers = include_barriers
         self.barriers = get_barriers(self.game_size) if include_barriers else []
 
-        # TAKEEEEEEEE ME OUOTTTTTTTTTTTTTTTT
-        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(18,))
-        self.action_space = gym.spaces.Discrete(6)
-
         self.reset()
         if self._render:
             self._draw()
 
-    def reset(self) -> Tuple[np.ndarray, float, bool, Dict]:
+    def reset(self) -> Tuple[torch.Tensor, float, bool, Dict]:
         self.message = ""
 
         opposite_spawn = {0: 1, 1: 0, 2: 3, 3: 2}
@@ -170,12 +164,12 @@ class ShooterEnv(gym.Env):
         # If action is None, do not move (Currently only used for human_player)
         if action is None:
             return
-        assert isinstance(action, (int, np.int64)) and action in range(  # type: ignore
+        assert isinstance(action, int) and action in range(  # type: ignore
             6
         ), f"Action should be an integer 0-5. Got {action}"
         self._take_action(action, player)
 
-    def step(self, action: Optional[int]) -> Tuple[np.ndarray, float, bool, Dict]:
+    def step(self, action: Optional[int]) -> Tuple[torch.Tensor, float, bool, Dict]:
         """Action should be an integer 0-5 for all bot moves, None is made available for the human
         player as it is too difficult to control otherwise."""
 
@@ -208,21 +202,25 @@ class ShooterEnv(gym.Env):
         return (2 + self.total_game_bullets) * 3
 
     @property
-    def observation_player1(self) -> np.ndarray:
-
-        observation_player1 = np.zeros(self.n_observations)
-        for idx, object in enumerate(
-            [self.player1, self.player2, *self.player1.bullets, *self.player2.bullets]
-        ):
-            observation_player1[idx * 3 : (idx + 1) * 3] = np.array(
-                [
-                    self.normalise(object.position[0], self.game_size[0]),
-                    self.normalise(object.position[1], self.game_size[1]),
-                    self.normalise(object.angle % 360, 360),
-                ]
+    def observation_player1(self) -> torch.Tensor:
+        prev_observation_player1 = torch.zeros((2 + Spaceship.NUM_BULLETS * 2) * 4)
+        bullets_p1 = self.player1.bullets + [GameObject((0, 0), DummyBullet(), 0)] * (
+            2 - len(self.player1.bullets)
+        )
+        bullets_p2 = self.player2.bullets + [GameObject((0, 0), DummyBullet(), 0)] * (
+            2 - len(self.player2.bullets)
+        )
+        for idx, object in enumerate([self.player1, self.player2, *bullets_p1, *bullets_p2]):
+            prev_observation_player1[idx * 4] = self.normalise(
+                object.position[0], self.game_size[0]
             )
+            prev_observation_player1[idx * 4 + 1] = self.normalise(
+                object.position[1], self.game_size[1]
+            )
+            prev_observation_player1[idx * 4 + 2] = math.sin(math.pi * (object.angle % 360) / 180)
+            prev_observation_player1[idx * 4 + 3] = math.cos(math.pi * (object.angle % 360) / 180)
 
-        return observation_player1
+        return prev_observation_player1
 
     @staticmethod
     def normalise(x: float, max_x: float) -> float:
@@ -233,21 +231,21 @@ class ShooterEnv(gym.Env):
         return 2 * (x / max_x) - 1
 
     @property
-    def observation_player2(self) -> np.ndarray:
-        observation_player2 = np.zeros(self.n_observations)
+    def observation_player2(self) -> torch.Tensor:
+        prev_observation_player2 = torch.zeros((2 + Spaceship.NUM_BULLETS * 2) * 4)
+        bullets_p1 = self.player1.bullets + [self.player1] * (2 - len(self.player1.bullets))
+        bullets_p2 = self.player2.bullets + [self.player2] * (2 - len(self.player2.bullets))
 
-        for idx, object in enumerate(
-            [self.player2, self.player1, *self.player2.bullets, *self.player1.bullets]
-        ):
-            observation_player2[idx * 3 : (idx + 1) * 3] = np.array(
-                [
-                    self.normalise(object.position[0], self.game_size[0]),
-                    self.normalise(object.position[1], self.game_size[1]),
-                    self.normalise(object.angle % 360, 360),
-                ]
+        for idx, object in enumerate([self.player2, self.player1, *bullets_p2, *bullets_p1]):
+            prev_observation_player2[idx * 3] = self.normalise(
+                object.position[0], self.game_size[0]
             )
+            prev_observation_player2[idx * 3 + 1] = self.normalise(
+                object.position[1], self.game_size[1]
+            )
+            prev_observation_player2[idx * 3 + 2] = self.normalise(object.angle % 360, 360)
 
-        return observation_player2
+        return prev_observation_player2
 
     def _take_action(self, action: int, player: Spaceship) -> None:
         self.n_actions += 1

@@ -1,9 +1,4 @@
-import random
-
-import numpy as np
 import torch
-from torch import nn
-
 from check_submission import check_submission
 from game_mechanics import (
     ShooterEnv,
@@ -13,6 +8,7 @@ from game_mechanics import (
     play_shooter,
     save_network,
 )
+from torch import nn
 
 TEAM_NAME = "Team Name"  # <---- Enter your team name here!
 assert TEAM_NAME != "Team Name", "Please change your TEAM_NAME!"
@@ -31,14 +27,14 @@ def train() -> nn.Module:
 
 
 def choose_move(
-    state: np.ndarray,
+    state: torch.Tensor,
     neural_network: nn.Module,
 ) -> int:  # <--------------- Please do not change these arguments!
     """Called during competitive play. It acts greedily given current state and neural network
     function dictionary. It returns a single action to take.
 
     Args:
-        state: State of the game as a np array, length = 18.
+        state: State of the game as a torch tensor, length = 18.
         neural_network: The pytorch network output by train().
 
     Returns:
