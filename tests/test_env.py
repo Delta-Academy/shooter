@@ -76,7 +76,7 @@ def test_shooting_ends_game() -> None:
         half_sized_game=True,
     )
 
-    for _ in range(10):  # Try different spawns
+    for _ in range(50):  # Try different spawns
         state, _, done, _ = env.reset()
         # failed if get stuck in infite loop
         while not done:
@@ -84,7 +84,10 @@ def test_shooting_ends_game() -> None:
             state, reward, done, _ = env.step(action)
 
         assert done
-        assert reward in {-1, 1}
+        if reward == 0:
+            assert env.player1.dead and env.player2.dead
+        else:
+            assert reward in {-1, 1}
 
 
 def test_reward_player_wins() -> None:
