@@ -233,17 +233,22 @@ class ShooterEnv:
     @property
     def observation_player2(self) -> torch.Tensor:
         prev_observation_player2 = torch.zeros((2 + Spaceship.NUM_BULLETS * 2) * 4)
-        bullets_p1 = self.player1.bullets + [self.player1] * (2 - len(self.player1.bullets))
-        bullets_p2 = self.player2.bullets + [self.player2] * (2 - len(self.player2.bullets))
+        bullets_p1 = self.player1.bullets + [GameObject((0, 0), DummyBullet(), 0)] * (
+            2 - len(self.player1.bullets)
+        )
+        bullets_p2 = self.player2.bullets + [GameObject((0, 0), DummyBullet(), 0)] * (
+            2 - len(self.player2.bullets)
+        )
 
         for idx, object in enumerate([self.player2, self.player1, *bullets_p2, *bullets_p1]):
-            prev_observation_player2[idx * 3] = self.normalise(
+            prev_observation_player2[idx * 4] = self.normalise(
                 object.position[0], self.game_size[0]
             )
-            prev_observation_player2[idx * 3 + 1] = self.normalise(
+            prev_observation_player2[idx * 4 + 1] = self.normalise(
                 object.position[1], self.game_size[1]
             )
-            prev_observation_player2[idx * 3 + 2] = self.normalise(object.angle % 360, 360)
+            prev_observation_player2[idx * 4 + 2] = math.sin(math.pi * (object.angle % 360) / 180)
+            prev_observation_player2[idx * 4 + 3] = math.cos(math.pi * (object.angle % 360) / 180)
 
         return prev_observation_player2
 
